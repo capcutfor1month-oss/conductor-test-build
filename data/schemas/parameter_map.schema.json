@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parameter_map.schema.json",
+  "title": "Plugin Parameter Map",
+  "description": "Future-ready schema for JSON parameter map files. No current file is required to conform. When a map file exists, this schema validates its shape.",
+  "type": "object",
+  "required": ["plugin_id", "parameters"],
+  "additionalProperties": false,
+  "properties": {
+    "plugin_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable slug matching plugin_metadata.schema.json plugin_id."
+    },
+    "plugin_name": {
+      "type": "string",
+      "description": "Human-readable plugin name for documentation."
+    },
+    "version_verified": {
+      "type": "string",
+      "description": "Plugin version this map was verified against."
+    },
+    "source_citations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Source documents or URLs used to build this map."
+    },
+    "parameters": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of parameter descriptors.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "PluginBridge numeric parameter ID."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Canonical parameter name as returned by PluginBridge."
+          },
+          "natural_names": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Phrases a user might say to refer to this parameter."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Display unit (e.g. 'Hz', 'dB', 'ms', '%', 'semitones')."
+          },
+          "min": {
+            "type": "number",
+            "description": "Minimum real-world value (before normalization)."
+          },
+          "max": {
+            "type": "number",
+            "description": "Maximum real-world value (before normalization)."
+          },
+          "default": {
+            "type": "number",
+            "description": "Default real-world value."
+          },
+          "normalized_min": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Normalized 0.0–1.0 value corresponding to min."
+          },
+          "normalized_max": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Normalized 0.0–1.0 value corresponding to max."
+          },
+          "normalized_default": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Normalized 0.0–1.0 value corresponding to the default."
+          },
+          "scale": {
+            "type": "string",
+            "enum": ["linear", "logarithmic", "exponential", "discrete"],
+            "description": "Value scaling type — useful for interpolation."
+          },
+          "group": {
+            "type": "string",
+            "description": "Logical group (e.g. 'Band 1', 'Dynamics', 'LFO 2')."
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Retrieval tags (e.g. ['frequency', 'band1', 'eq'])."
+          },
+          "risk": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "description": "Per-parameter risk override. Inherits plugin risk if absent."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text notes about quirks, interaction effects, or safe ranges."
+          }
+        }
+      }
+    }
+  }
+}

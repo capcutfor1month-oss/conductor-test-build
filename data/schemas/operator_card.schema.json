@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operator_card.schema.json",
+  "title": "Operator Card Frontmatter",
+  "description": "Validates optional YAML frontmatter in operator card Markdown files. Existing cards without frontmatter are unaffected — all fields are optional.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "description": "Stable slug identifier for this card (e.g. 'fabfilter_pro_q_4')."
+    },
+    "plugin_id": {
+      "type": "string",
+      "description": "Must match plugin_metadata.schema.json plugin_id when both are set."
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable plugin name for UI display."
+    },
+    "type": {
+      "type": "string",
+      "description": "Functional category (eq / compressor / synth / limiter / …)."
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Action-risk level; should match the plugin entry's risk field."
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": ["verified", "draft", "deprecated"],
+      "description": "Editorial status of this card."
+    },
+    "collection": {
+      "type": "string",
+      "description": "ChromaDB collection this card should be ingested into (e.g. 'plugin_operator_index')."
+    },
+    "source_citations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Source document names or URLs referenced in this card."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Arbitrary retrieval tags (e.g. ['eq', 'surgical', 'linear-phase'])."
+    },
+    "operator_card_triggers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Intent keywords that should surface this card during routing."
+    },
+    "parameter_map_file": {
+      "type": "string",
+      "description": "Relative path to the companion JSON parameter map, if one exists."
+    }
+  }
+}

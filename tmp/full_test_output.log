@@ -1,0 +1,360 @@
+── Phase C Eval Set — Mode Classification ──────────────────────────
+  20 cases
+
+  ✅ [C-01] [MENTOR                ] my vocals are hurting in the mix
+  ✅ [C-02] [INTERN_WRITE_RISKY    ] make the master louder
+  ✅ [C-03] [MENTOR                ] dhol sounds muddy, how do I fix it
+  ✅ [C-04] [INTERN_WRITE_SAFE     ] lower the kick by 1dB
+  ✅ [C-05] [MENTOR                ] what is the difference between trance and house
+  ✅ [C-06] [FREEFORM_GENERAL      ] what should I eat for dinner
+  ✅ [C-07] [INTERN_WRITE_SAFE     ] set Pro-Q 4 Band 2 frequency to 3.4kHz
+  ✅ [C-08] [INTERN_WRITE_RISKY    ] set Ozone 12 limiter ceiling to -1 LUFS
+  ✅ [C-09] [MENTOR                ] what Q should I use for vocal presence cut
+  ✅ [C-10] [MENTOR                ] how should I compress the snare
+  ✅ [C-11] [INTERN_WRITE_RISKY    ] delete the scratch vocal track
+  ✅ [C-12] [INTERN_READ           ] what compression did I use on the vocals last session
+  ✅ [C-13] [MENTOR                ] how do I layer strings for a cinematic feel
+  ✅ [C-14] [INTERN_READ           ] what is the current LUFS of my mix
+  ✅ [C-15] [INTERN_WRITE_SAFE     ] create a new audio track
+  ✅ [C-16] [INTERN_WRITE_SAFE     ] route violin to the strings bus
+  ✅ [C-17] [MENTOR                ] what is the best EQ plugin for mixing
+  ✅ [C-18] [INTERN_WRITE_RISKY    ] bounce the whole session to audio
+  ✅ [C-19] [INTERN_READ           ] what stage am I at in this project
+  ✅ [C-20] [INTERN_WRITE_SAFE     ] set Pro-Q 4 band 1 to high-pass at 80Hz
+
+  Mode classification: 20 pass / 0 fail / 0 deferred
+
+── Phase C Eval Set — Metadata Validation ───────────────────────────
+  ✅ valid producer write                               → valid=True
+  ✅ invalid memory_level=7                             → valid=False errors=["'memory_level' = 7 invalid — must be 1, 2, 3, or 4"]
+  ✅ bad source_type + wrong type for owner_verified    → valid=False errors=["'owner_verified': expected bool, got str = 'yes'", "'source_type' = 'bad_type' not valid for plugin_operator_index. Valid: ['operator_card', 'plugin_quirk', 'param_override']"]
+  ✅ confidence out of range                            → valid=False errors=["'confidence' = 1.5 out of range — must be 0.0–1.0"]
+  ✅ valid audio snapshot                               → valid=True
+
+  Metadata validation: 5 pass / 0 fail
+
+── Phase C Eval Set — Vault Seeder Idempotency ─────────────────────
+  ⏭  ChromaDB not installed in this Python — skipping seeder test
+     Run with the pipx chromadb venv to verify.
+
+── Phase C Eval Set — Collection Routing (schema check only) ────────
+  ✅ [C-01] MENTOR → collections schema OK
+  ✅ [C-02] INTERN_WRITE_RISKY → collections schema OK
+  ✅ [C-03] MENTOR → collections schema OK
+  ✅ [C-04] INTERN_WRITE_SAFE → collections schema OK
+  ✅ [C-05] MENTOR → collections schema OK
+  ✅ [C-06] FREEFORM_GENERAL → collections schema OK
+  ✅ [C-07] INTERN_WRITE_SAFE → collections schema OK
+  ✅ [C-08] INTERN_WRITE_RISKY → collections schema OK
+  ✅ [C-09] MENTOR → collections schema OK
+  ✅ [C-10] MENTOR → collections schema OK
+  ✅ [C-11] INTERN_WRITE_RISKY → collections schema OK
+  ✅ [C-12] INTERN_READ → collections schema OK
+  ✅ [C-13] MENTOR → collections schema OK
+  ✅ [C-14] INTERN_READ → collections schema OK
+  ✅ [C-15] INTERN_WRITE_SAFE → collections schema OK
+  ✅ [C-16] INTERN_WRITE_SAFE → collections schema OK
+  ✅ [C-17] MENTOR → collections schema OK
+  ✅ [C-18] INTERN_WRITE_RISKY → collections schema OK
+  ✅ [C-19] INTERN_READ → collections schema OK
+  ✅ [C-20] INTERN_WRITE_SAFE → collections schema OK
+
+  Collection routing: 20 pass / 0 fail
+
+── DEFERRED (run after C2–C5 are built) ─────────────────────────────
+  • Actual ChromaDB retrieval assertions
+  • Similarity threshold enforcement (NO_STRONG_MEMORY_MSG injected)
+  • superseded_by conflict detection (C-09)
+  • audio freshness labels (C-14)
+  • Owner verification check (C-20)
+  • BM25 exact match (C-07, C-20)
+
+── Phase C Eval Set — Risky Keyword Detector (client-side) ─────────
+  ✅ [RISKY] Ozone limiter ceiling (original Codex example)
+  ✅ [RISKY] master output ceiling phrased differently
+  ✅ [RISKY] LUFS target change
+  ✅ [RISKY] true peak limit
+  ✅ [RISKY] Pro-Q EQ band
+  ✅ [RISKY] compressor attack on snare
+  ✅ [RISKY] soothe on strings
+  ✅ [RISKY] remove plugin from track
+  ✅ [RISKY] de-esser threshold
+  ✅ [RISKY] Serum preset replace
+  ✅ [RISKY] Kontakt randomise
+  ✅ [RISKY] Omnisphere patch change
+  ✅ [RISKY] bounce MIDI to audio
+  ✅ [RISKY] delete track
+  ✅ [RISKY] flatten arrangement
+  ✅ [RISKY] overwrite session
+  ✅ [RISKY] clear all clips
+  ✅ [RISKY] all tracks gain
+  ✅ [RISKY] global tempo change
+  ✅ [RISKY] master bus insert
+  ✅ [RISKY] entire project export
+  ✅ [safe ] safe: what is BPM
+  ✅ [safe ] safe: how to mix dhol
+  ✅ [safe ] safe: playback question
+  ✅ [safe ] safe: general chat
+
+  Risky keyword detector: 25 pass / 0 fail
+
+── Phase C Eval Set — Failure-Code Dedup Guard ──────────────────────
+  ⏭  ChromaDB not installed — skipping dedup test
+
+── Phase C Eval Set — Start Script Health ────────────────────────────
+  ✅ start_bridge.sh exists
+  ✅ start_bridge.sh is executable (chmod +x)
+  ✅ References ChromaDB pipx venv python
+  ✅ References port 4611
+  ✅ Does not invoke bare python3 as primary executor
+
+  Start script health: pass
+
+── Phase C Eval Set — Risk Taxonomy (category/config-based) ─────────
+  ✅ [destructive         ] delete track
+  ✅ [destructive         ] erase clip
+  ✅ [destructive         ] clear notes — near neighbor
+  ✅ [destructive         ] drop track
+  ✅ [render_export       ] bounce
+  ✅ [render_export       ] export
+  ✅ [render_export       ] stem export
+  ✅ [render_export       ] render — near neighbor
+  ✅ [render_export       ] consolidate — near neighbor
+  ✅ [mastering_output    ] master louder
+  ✅ [mastering_output    ] master ceiling
+  ✅ [mastering_output    ] true peak
+  ✅ [mastering_output    ] lufs target — near neighbor
+  ✅ [mastering_output    ] limiter ceiling
+  ✅ [batch_global        ] all tracks
+  ✅ [batch_global        ] every track
+  ✅ [batch_global        ] global tempo
+  ✅ [batch_global        ] add to all — near neighbor
+  ✅ [plugin_replace      ] replace plugin
+  ✅ [plugin_replace      ] replace patch
+  ✅ [plugin_replace      ] overwrite
+  ✅ [plugin_replace      ] randomize preset
+  ✅ [freeze_flatten      ] flatten arrangement
+  ✅ [freeze_flatten      ] flatten track — near neigh.
+  ✅ [freeze_flatten      ] freeze all — near neighbor
+  ✅ [mastering_output    ] Ozone (original example)
+  ✅ [high_risk_plugin    ] Pro-L 2 — near neighbor
+  ✅ [high_risk_plugin    ] Limitless — near neighbor
+  ✅ [high_risk_plugin    ] God Particle — near neighbor
+  ✅ [safe                ] safe: EQ a dhol
+  ✅ [safe                ] safe: compress snare
+  ✅ [safe                ] safe: route to bus
+  ✅ [safe                ] safe: Pro-Q param write
+  ✅ [safe                ] safe: general chat
+  ✅ [safe                ] safe: read BPM
+
+  ✅ Card lookup [Ozone card] → 'Ozone 12 Operator Card.md'
+  ✅ Card lookup [Pro-Q card] → 'Pro-Q 4 Operator Card.md'
+  ✅ Card lookup [Serum 2 card] → 'Serum 2 Operator Card.md'
+  ✅ Card lookup [Valhalla — no card] → ''
+  ✅ Card lookup [unknown — no card] → ''
+
+  Risk taxonomy: 40 pass / 0 fail  |  22 high-risk plugin terms
+
+── Phase C Eval Set — Collection Hard-Reject Guard ──────────────────
+  ✅ [allowed ] short key: producer → allowed
+  ✅ [allowed ] short key: failure → allowed
+  ✅ [allowed ] short key: plugin → allowed
+  ✅ [allowed ] short key: audio → allowed
+  ✅ [allowed ] short key: project → allowed
+  ✅ [allowed ] full: producer_memory_index → allowed
+  ✅ [allowed ] full: failure_cases_index → allowed
+  ✅ [rejected] legacy: conductor_memory → rejected
+  ✅ [rejected] typo: producr → rejected
+  ✅ [rejected] arbitrary: my_secret_col → rejected
+  ✅ [rejected] empty string → rejected
+  ✅ [rejected] injection attempt → rejected
+  ✅ Schema has exactly 5 collections: 5
+
+  Collection guard: 13 pass / 0 fail
+
+── Phase C Eval Set — FREEFORM Single-Source-of-Truth ───────────────
+  ✅ FREEFORM_PATTERNS defined in memory_schema.py
+  ✅ request_mode_classifier.py does NOT locally define FREEFORM_PATTERNS
+  ✅ request_mode_classifier.py imports FREEFORM_PATTERNS from memory_schema
+  ✅ routed_retriever.py checks FREEFORM_GENERAL (not raw patterns)
+  ✅ risk_taxonomy.py imports FREEFORM_PATTERNS from memory_schema (for /risk/rules)
+
+  FREEFORM single-source: pass
+
+── Phase C Eval Set — INTERN_WRITE_SAFE Failure Retrieval ──────────
+  ✅ failure_cases_index in INTERN_WRITE_SAFE collections: ['producer_memory_index', 'plugin_operator_index', 'failure_cases_index']
+  ✅ failure_cases_index in INTERN_WRITE_RISKY collections (must remain)
+  ✅ failure_cases_index NOT in FREEFORM_GENERAL (correctly excluded)
+  ✅ failure_cases_index NOT in MENTOR (correctly excluded)
+
+  INTERN_WRITE_SAFE failure retrieval: pass
+
+── Phase C Eval Set — Temporal Memory Scoring (C2) ─────────────────
+  ✅ recency(now)=1.000 > 0.95
+  ✅ recency(7d)=0.500 ≈ 0.5  (half-life=7d)
+  ✅ recency(30d)=0.051 < 0.15
+  ✅ recency(missing)=0.5 = 0.5 (neutral)
+  ✅ score(recent 0.6) 0.7100 > score(old 0.6) 0.4254
+  ✅ score(level-4 old) = 9999.0 (expect 9999.0)
+  ✅ score bounded < 1.0: 0.7100
+  ✅ high-sim-old 0.6054 > low-sim-new 0.5900 (semantic still matters)
+  ✅ SCORING_WEIGHTS sum = 1.0 (must = 1.0)
+  ✅ score_items_debug returns breakdown keys: ['final', 'semantic', 'recency', 'frequency', 'age_days', 'override']
+  ✅ memory_scoring.py has no hardcoded collection names (generalised)
+
+  Temporal scoring (C2): 11 pass / 0 fail
+
+── Phase C Eval Set — Runtime Generalization Pass ───────────────────
+
+  [A] Alias-based high-risk detection
+  ✅ FabFilterProL2 alias → risky
+  ✅ iZotopeOzone12 alias → risky
+  ✅ XferSerum2 (medium risk) — no risky action → safe
+  ✅ FabFilterProQ4 (medium risk) — no risky action → safe
+
+  [B] Alias-based operator-card detection
+  ✅ XferSerum2 alias → Serum 2 card
+  ✅ FabFilterProQ4 alias → Pro-Q 4 card
+  ✅ FabFilterProL2 (no card) → empty string
+
+  [C] Broadened freeze_flatten category
+  ✅ freeze every midi track → freeze_flatten
+  ✅ flatten the lead synth → freeze_flatten
+  ✅ freeze midi on the drums bus → freeze_flatten
+
+  [D] Broadened plugin_replace category
+  ✅ remove plugin from kick channel → plugin_replace
+  ✅ load a new patch in Omnisphere → plugin_replace
+  ✅ load preset into the lead synth → plugin_replace
+
+  [E] Expanded FREEFORM_GENERAL patterns
+  ✅ what should I cook tonight → FREEFORM_GENERAL
+  ✅ who is the prime minister of India → FREEFORM_GENERAL
+  ✅ recipe for butter chicken → FREEFORM_GENERAL
+  ✅ translate this to French → FREEFORM_GENERAL
+
+  [F] High-risk plugin term count (includes aliases)
+  ✅ high_risk_plugin_terms includes aliases → 22 terms (expect ≥12)
+  ✅ camelCase aliases present → ['fabfilterprol2', 'godparticle', 'izotopeozone11', 'izotopeozone12', 'thegodparticle']
+
+  Generalization pass: 19 pass / 0 fail
+
+── Phase C Eval Set — Live Bridge Integration Tests ─────────────────
+  ✅ Bridge reachable at http://localhost:4611  (memory=ready)
+
+  [/risk/rules structure]
+  ✅ /risk/rules contains type_risk_policies
+  ✅ /risk/rules contains compound_patterns
+  ✅ /risk/rules has ≥7 action categories: 7
+  ✅ /risk/rules high_risk_plugin_terms: 22 terms (expect ≥20)
+  ✅   alias 'fabfilterprol2' in high_risk_plugin_terms
+  ✅   alias 'izotopeozone12' in high_risk_plugin_terms
+  ✅   alias 'thegodparticle' in high_risk_plugin_terms
+  ✅   alias 'prol2' in high_risk_plugin_terms
+  ✅   type policy 'mastering' present
+  ✅   type policy 'limiter' present
+  ✅   type policy 'synth' present
+  ✅   type policy 'sampler' present
+  ✅   freeze_flatten includes standalone 'freeze': ['freeze', 'freeze all', 'freeze track', 'freeze midi', 'freeze audio', 'flatten', 'flatten arrangement', 'flatten track']
+  ✅   freeze_flatten includes standalone 'flatten': ['freeze', 'freeze all', 'freeze track', 'freeze midi', 'freeze audio', 'flatten', 'flatten arrangement', 'flatten track']
+  ✅   plugin_replace includes 'remove plugin': ['replace plugin', 'swap plugin', 'remove plugin', 'overwrite', 'replace patch', 'new patch', 'load patch', 'swap preset', 'flatten synth', 'bounce midi', 'randomize preset', 'randomize patch', 'load preset', 'new preset']
+  ✅   plugin_replace includes 'new patch': ['replace plugin', 'swap plugin', 'remove plugin', 'overwrite', 'replace patch', 'new patch', 'load patch', 'swap preset', 'flatten synth', 'bounce midi', 'randomize preset', 'randomize patch', 'load preset', 'new preset']
+
+  [/context/pack live routing]
+  ✅ 'make the master louder' → INTERN_WRITE_RISKY
+  ✅ 'how do I compress a dhol' → MENTOR
+  ✅ 'set Pro-Q 4 band 2 to 3kHz' → INTERN_WRITE_SAFE
+  ✅ 'randomize Serum patch' → INTERN_WRITE_SAFE
+  ✅ 'load Omnisphere patch' → INTERN_WRITE_SAFE
+  ✅ 'set Kontakt preset' → INTERN_WRITE_SAFE
+  ✅ 'set FabFilterProL2 ceiling' → INTERN_WRITE_RISKY
+  ✅ 'adjust iZotopeOzone12 on master' → INTERN_WRITE_RISKY
+  ✅ 'freeze every midi track' → INTERN_WRITE_RISKY
+  ✅ 'flatten the lead synth' → INTERN_WRITE_RISKY
+  ✅ 'write a short email' → FREEFORM_GENERAL
+  ✅ 'what should I cook tonight' → FREEFORM_GENERAL
+  ✅ 'who is the prime minister of India' → FREEFORM_GENERAL
+
+  [/context/pack live protection fields]
+  ✅ 'Create a new Omnisphere track with a warm pad.' → protection=AUTO_EXECUTE_ALLOWED auto=True confirm=False
+  ✅ 'Replace the current lead patch with Omnisphere.' → protection=UNDO_LOG_REQUIRED auto=True confirm=False
+  ✅ 'Randomize this Serum patch.' → protection=UNDO_LOG_REQUIRED auto=True confirm=False
+  ✅ 'Lower it by 1 dB.' → protection=CLARIFY_REQUIRED auto=False confirm=False
+  ✅ 'Open the plugin GUI and drag the wavetable by hand.' → protection=BLOCK_UNSUPPORTED auto=False confirm=False
+  ✅ 'Delete all muted tracks.' → protection=CONFIRM_REQUIRED auto=False confirm=True
+  ✅ 'Export final master.' → protection=CONFIRM_REQUIRED auto=False confirm=True
+
+  Live bridge: 36 pass / 0 fail
+
+── Phase C Eval Set — FREEFORM Guardrail (Conservative) ────────────
+
+  [A] Must fire as FREEFORM_GENERAL (clearly off-topic)
+  ✅ FREEFORM  | 'what should I cook tonight'
+  ✅ FREEFORM  | 'what should I eat for lunch'
+  ✅ FREEFORM  | 'how do I cook rice'
+  ✅ FREEFORM  | 'what should I have for dinner'
+  ✅ FREEFORM  | 'recipe for butter chicken'
+  ✅ FREEFORM  | 'recipe to make paneer tikka'
+  ✅ FREEFORM  | 'write a short email'
+  ✅ FREEFORM  | 'write me a quick letter'
+  ✅ FREEFORM  | 'help me write an essay'
+  ✅ FREEFORM  | 'can you write a cover letter'
+  ✅ FREEFORM  | 'translate this to Hindi'
+  ✅ FREEFORM  | 'translate it to French'
+  ✅ FREEFORM  | 'translate that into Spanish'
+  ✅ FREEFORM  | 'translate the text into Japanese'
+  ✅ FREEFORM  | 'who is the prime minister of India'
+  ✅ FREEFORM  | 'who was the president of France'
+  ✅ FREEFORM  | 'who is the king of Norway'
+  ✅ FREEFORM  | 'what is the capital of France'
+  ✅ FREEFORM  | "what's the currency of Japan"
+  ✅ FREEFORM  | 'tell me a joke'
+  ✅ FREEFORM  | 'what time is it'
+
+  [B] Must NOT steal music/project prompts (expect MENTOR or INTERN_*)
+  ✅ NOT FREEFORM | 'write a bassline' → MENTOR
+  ✅ NOT FREEFORM | 'write a short hook' → MENTOR
+  ✅ NOT FREEFORM | 'write midi notes for the kick' → INTERN_WRITE_SAFE
+  ✅ NOT FREEFORM | 'write a melody for the chorus' → MENTOR
+  ✅ NOT FREEFORM | 'translate this feeling into chords' → MENTOR
+  ✅ NOT FREEFORM | 'translate this to a chord voicing' → MENTOR
+  ✅ NOT FREEFORM | 'make it warmer' → MENTOR
+  ✅ NOT FREEFORM | 'make the bass heavier' → MENTOR
+  ✅ NOT FREEFORM | 'what should I do next' → MENTOR
+  ✅ NOT FREEFORM | 'what should I work on next' → MENTOR
+  ✅ NOT FREEFORM | 'how do I EQ a dhol' → MENTOR
+  ✅ NOT FREEFORM | 'compress the snare' → INTERN_WRITE_SAFE
+
+  [C] Must NOT steal ambiguous prompts (expect CLARIFY or MENTOR)
+  ✅ NOT FREEFORM | 'translate this' → MENTOR
+  ✅ NOT FREEFORM | 'make this better' → MENTOR
+  ✅ NOT FREEFORM | 'make it better' → MENTOR
+  ✅ NOT FREEFORM | 'write something short' → MENTOR
+  ✅ NOT FREEFORM | 'write something for me' → MENTOR
+  ✅ NOT FREEFORM | 'what should I do' → MENTOR
+  ✅ NOT FREEFORM | 'what should I make next' → MENTOR
+  ✅ NOT FREEFORM | 'what should I add here' → MENTOR
+
+  FREEFORM guardrail: 41 pass / 0 fail
+
+── Phase C Eval Set — Protection Levels ───────────────────────────
+  ✅ 'Create a new Omnisphere track with a warm pad.'
+  ✅ 'Load Omnisphere on a new track.'
+  ✅ 'Lower the kick by 1 dB.'
+  ✅ 'Rename all guitar tracks cleanly.'
+  ✅ 'Replace the current lead patch with Omnisphere.'
+  ✅ 'Randomize this Serum patch.'
+  ✅ 'Add Pro-Q to the vocal track.'
+  ✅ 'Route violin to the strings bus.'
+  ✅ 'Create guitar bus, pad bus, bass bus, string bus, route matching tracks to them, then route all those buses to Music Bus.'
+  ✅ 'Lower it by 1 dB.'
+  ✅ 'Route it to the bus.'
+  ✅ 'Open the plugin GUI and drag the wavetable by hand.'
+  ✅ 'Delete all muted tracks.'
+  ✅ 'Flatten every MIDI track.'
+  ✅ 'Push master to -7 LUFS.'
+  ✅ 'Export final master.'
+
+  Protection levels: 16 pass / 0 fail
+
+✅ All checks pass

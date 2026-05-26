@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plugin_metadata.schema.json",
+  "title": "Plugin Metadata",
+  "description": "Schema for entries in known_plugins.json. Required fields match the current shape; future optional fields are validated only when present.",
+  "type": "object",
+  "required": [
+    "name",
+    "aliases",
+    "natural_names",
+    "manufacturer",
+    "type",
+    "risk",
+    "has_card",
+    "card_file"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Canonical plugin name (e.g. 'Pro-Q 4')."
+    },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Short-form names or abbreviations."
+    },
+    "natural_names": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Phrases a user might say to refer to this plugin."
+    },
+    "manufacturer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plugin vendor (e.g. 'FabFilter')."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Functional category (e.g. 'eq', 'compressor', 'synth')."
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Action-risk level used by the risky-gate."
+    },
+    "has_card": {
+      "type": "boolean",
+      "description": "Whether an operator card file exists for this plugin."
+    },
+    "card_file": {
+      "type": "string",
+      "description": "Relative path to the operator card (empty string if has_card=false)."
+    },
+
+    "plugin_id": {
+      "type": "string",
+      "description": "(Future) Stable machine identifier, slug form (e.g. 'fabfilter_pro_q_4')."
+    },
+    "parameter_map_file": {
+      "type": "string",
+      "description": "(Future) Relative path to the JSON parameter map for this plugin."
+    },
+    "generic_class_card_file": {
+      "type": "string",
+      "description": "(Future) Relative path to a generic class card when no plugin-specific card exists."
+    },
+    "operator_card_triggers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "(Future) Intent keywords that should surface this plugin's operator card."
+    },
+    "version": {
+      "type": "string",
+      "description": "(Future) Plugin version string this entry was last verified against."
+    },
+    "source_citations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "(Future) Source document names or URLs that informed this entry."
+    },
+    "pluginbridge_name": {
+      "type": "string",
+      "description": "(Future) Exact name as it appears in the PluginBridge dropdown."
+    },
+    "formats": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["VST3", "AU", "AAX", "CLAP"]
+      },
+      "description": "(Future) Supported plugin formats."
+    },
+    "safety_tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "(Future) Arbitrary safety/behaviour tags (e.g. 'destructive', 'offline-safe')."
+    },
+    "vendor_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "(Future) Manufacturer product page URL."
+    }
+  }
+}

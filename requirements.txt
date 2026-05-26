@@ -1,0 +1,28 @@
+# Conductor TEST-BUILD — Python dependencies
+#
+# The bridge runs inside the chromadb pipx venv (see tools/start_bridge.sh).
+# All packages here must be present in that venv.
+#
+# To install into the chromadb venv (one-time, or after a fresh pipx install):
+#
+#   pipx inject chromadb rank-bm25
+#
+# This is already done by install.command (step 7b).
+# To verify:
+#   /Volumes/T7\ Shield/Users/Aditya/.local/pipx/venvs/chromadb/bin/pip list | grep rank
+#
+# To run tests (must use the chromadb venv Python, NOT system python3):
+#   bash tools/run_tests.sh
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Core memory store (installed as a pipx app — do NOT pip install directly)
+chromadb>=1.5.9
+
+# BM25 exact-rescue search (Phase C, C5/C6)
+# Hard dependency of _bm25_rescue() in rag/routed_retriever.py
+# Graceful fallback: retrieval still works without it; BM25 sections skip
+rank-bm25>=0.2.2
+
+# Numerical ops used by chromadb and audio analysis
+numpy>=2.0.0

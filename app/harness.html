@@ -1,0 +1,3392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conductor — Desktop Preview</title>
+<style>
+  :root {
+    --bg: #050608;
+    --surface-1: #090b0f;
+    --surface-2: #11151b;
+    --surface-3: #171c24;
+    --surface-4: #1d242e;
+    --border-subtle: rgba(255,255,255,0.075);
+    --border-strong: rgba(255,255,255,0.13);
+    --text-primary: #edf1f7;
+    --text-secondary: #a3adbd;
+    --text-tertiary: #687386;
+    --accent: #6ea0ff;
+    --accent-hover: #82adff;
+    --accent-text: #9cbcff;
+    --accent-subtle: rgba(110,160,255,0.10);
+    --success: #34d399;
+    --warning: #fbbf24;
+    --destructive: #f87171;
+    --destructive-text: #f87171;
+    --on-accent: #FFFFFF;
+    --panel-width: 460px;
+    --panel-alpha: 0.98;
+    --panel-chrome-alpha: 0.92;
+    --chat-window-width: 420px;
+    --chat-window-alpha: 0.965;
+    --fc-glow-a0: 0.20;
+    --fc-glow-a1: 0.55;
+    --fc-glow-a2: 0.38;
+    --fc-glow-a3: 0.22;
+    --fc-glow-a4: 0.14;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 18% 14%, rgba(98,142,255,0.20) 0 8%, transparent 23%),
+      radial-gradient(circle at 82% 70%, rgba(120,74,255,0.16) 0 10%, transparent 28%),
+      radial-gradient(circle at 50% 105%, rgba(36,211,148,0.10) 0 8%, transparent 34%),
+      linear-gradient(135deg, #080a10 0%, #0d1119 45%, #030407 100%);
+    color: var(--text-primary);
+  }
+
+  .desktop {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .menu-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 38px;
+    background: rgba(0,0,0,0.94);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    z-index: 20;
+  }
+
+  .menu-left, .menu-right {
+    position: absolute;
+    top: 0;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.82);
+    letter-spacing: 0.01em;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .menu-left { left: 0; }
+  .menu-right { right: 0; gap: 10px; }
+  .menu-apple { font-size: 14px; }
+
+  .notch-zone {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 60px;
+    z-index: 30;
+    transition: width 240ms cubic-bezier(0.22,1,0.36,1);
+  }
+
+  .notch-zone.shortcut-voice {
+    width: 340px;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 32px;
+    background: #000;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition:
+      width 260ms cubic-bezier(0.22,1,0.36,1),
+      height 260ms cubic-bezier(0.22,1,0.36,1),
+      border-radius 260ms cubic-bezier(0.22,1,0.36,1),
+      box-shadow 260ms ease-out,
+      background 260ms ease-out;
+  }
+
+  .notch::before,
+  .notch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease-out;
+  }
+
+  .notch::before {
+    background:
+      radial-gradient(circle at 84% 86%, rgba(190,74,255,0.62), transparent 25%),
+      radial-gradient(circle at 67% 100%, rgba(255,123,64,0.42), transparent 26%),
+      linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.035) 48%, transparent 100%);
+    filter: blur(0.2px);
+  }
+
+  .notch::after {
+    inset: auto 10px 0 54%;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255,156,88,0.9), rgba(190,80,255,0.95), transparent);
+    box-shadow:
+      0 0 14px rgba(190,80,255,0.7),
+      0 0 20px rgba(255,132,68,0.34);
+    transform: translateX(-44%);
+  }
+
+  .notch.shortcut-voice {
+    width: 238px;
+    height: 34px;
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+    background: #010102;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05),
+      0 10px 22px rgba(0,0,0,0.52),
+      0 0 22px rgba(174,82,255,0.28);
+  }
+
+  .notch.shortcut-voice::before,
+  .notch.shortcut-voice::after {
+    opacity: 1;
+  }
+
+  .notch.shortcut-voice::before {
+    animation: shortcutGlowBloom 1.35s ease-in-out infinite;
+  }
+
+  .notch.shortcut-voice::after {
+    animation: shortcutGlowSweep 1.05s cubic-bezier(0.16,1,0.3,1) infinite;
+  }
+  .notch.listening {
+    box-shadow: 0 0 18px rgba(251,146,60,0.34), 0 0 6px rgba(251,146,60,0.22);
+  }
+  .notch.shortcut-voice.listening {
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05),
+      0 10px 22px rgba(0,0,0,0.52),
+      0 0 24px rgba(190,80,255,0.34),
+      0 0 12px rgba(255,128,64,0.2);
+  }
+  .notch.thinking {
+    box-shadow: 0 0 18px rgba(110,160,255,0.34), 0 0 6px rgba(110,160,255,0.22);
+  }
+
+  @keyframes shortcutGlowSweep {
+    0%   { transform: translateX(-72%) scaleX(0.72); opacity: 0.12; }
+    32%  { opacity: 1; }
+    72%  { transform: translateX(18%) scaleX(1); opacity: 0.92; }
+    100% { transform: translateX(42%) scaleX(0.62); opacity: 0.18; }
+  }
+
+  @keyframes shortcutGlowBloom {
+    0%, 100% { opacity: 0.55; transform: translateX(-6px); }
+    50%      { opacity: 0.9; transform: translateX(8px); }
+  }
+
+  /* notch states — pure CSS opacity+transform, no display toggling */
+  .notch-state {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 1;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 400ms cubic-bezier(0.34,1.56,0.64,1), transform 400ms cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .notch-state.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  .notch-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .listening-label { color: #FF8C3A; }
+  .thinking-label  { color: #A855F7; }
+
+  /* ── WAVE BARS ── */
+  .wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 16px;
+  }
+  .bar {
+    display: block;
+    width: 2.5px;
+    border-radius: 99px;
+    background: linear-gradient(to top, rgba(251,146,60,0.4), #fb923c);
+    box-shadow: 0 0 6px rgba(251,146,60,0.8);
+    animation: waveBar 0.6s ease-in-out infinite alternate;
+    height: 4px;
+    transform-origin: bottom;
+  }
+  @keyframes waveBar {
+    0%   { height: 3px;  opacity: 0.5; }
+    100% { height: 16px; opacity: 1;   }
+  }
+
+  /* ── THINK DOTS ── */
+  .think-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dot {
+    display: block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #c4b5fd 0%, #7c3aed 100%);
+    box-shadow: 0 0 8px rgba(139,92,246,0.9);
+    animation: thinkDot 1s ease-in-out infinite;
+  }
+  @keyframes thinkDot {
+    0%, 100% { transform: scale(0.4) translateY(0); opacity: 0.3; }
+    50%       { transform: scale(1.2) translateY(-2px); opacity: 1; }
+  }
+
+  .desktop-label {
+    position: absolute;
+    left: 28px;
+    bottom: 26px;
+    color: rgba(255,255,255,0.28);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .panel-wrap {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    transform-origin: top center;
+    z-index: 45;
+    opacity: 0;
+    pointer-events: none;
+    clip-path: inset(0 calc(50% - 60px) calc(100% - 32px) calc(50% - 60px) round 0 0 16px 16px);
+    will-change: clip-path, opacity, transform;
+    transition: clip-path 460ms cubic-bezier(0.19,1,0.22,1),
+                opacity 240ms ease-out,
+                transform 460ms cubic-bezier(0.19,1,0.22,1);
+  }
+
+  .panel-wrap.visible {
+    opacity: 1;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0 round 0 0 16px 16px);
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .panel-wrap.hidden-state {
+    opacity: 0;
+    pointer-events: none;
+    clip-path: inset(0 calc(50% - 60px) calc(100% - 32px) calc(50% - 60px) round 0 0 16px 16px);
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .panel {
+    width: var(--panel-width);
+    background: linear-gradient(180deg, rgba(12,15,20,var(--panel-alpha)) 0%, rgba(7,9,13,var(--panel-alpha)) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0 0 15px 15px;
+    box-shadow:
+      0 0 0 0.5px rgba(255,255,255,0.035),
+      0 18px 52px rgba(0,0,0,0.58),
+      0 2px 12px rgba(0,0,0,0.32);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .panel::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 120px;
+    height: 32px;
+    transform: translateX(-50%);
+    background: #000;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04),
+      0 10px 18px rgba(0,0,0,0.28);
+    pointer-events: none;
+    z-index: 3;
+    transition:
+      width 260ms cubic-bezier(0.22,1,0.36,1),
+      height 260ms cubic-bezier(0.22,1,0.36,1),
+      border-radius 260ms cubic-bezier(0.22,1,0.36,1),
+      box-shadow 260ms ease-out;
+  }
+
+  .notch-zone.shortcut-voice ~ .panel-wrap .panel::before {
+    width: 238px;
+    height: 34px;
+    border-bottom-left-radius: 9px;
+    border-bottom-right-radius: 9px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05),
+      0 10px 22px rgba(0,0,0,0.42),
+      0 0 22px rgba(174,82,255,0.18);
+  }
+
+  .top-nav {
+    position: relative;
+    z-index: 1;
+    height: 44px;
+    padding: 0 14px;
+    background: rgba(7,9,13,var(--panel-chrome-alpha));
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(255,255,255,0.065);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .tab-group { display: flex; gap: 6px; }
+  .tab {
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 150ms ease-out;
+    color: var(--text-tertiary);
+    background: transparent;
+    user-select: none;
+  }
+  .tab.active {
+    background: rgba(255,255,255,0.075);
+    border-color: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    transition: background 250ms;
+  }
+  .status-dot.pulsing {
+    background: var(--accent);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+  .gear-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary);
+    width: 28px; height: 28px; padding: 0;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    transition: color 150ms, background 150ms;
+  }
+  .gear-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .gear-btn:hover { color: var(--text-secondary); background: var(--surface-2); }
+
+  .page {
+    display: none;
+    flex-direction: column;
+  }
+  .page.active {
+    display: flex;
+    animation: pageSoftIn 280ms cubic-bezier(0.22,1,0.36,1);
+  }
+  @keyframes pageSoftIn {
+    from { opacity: 0; transform: translateY(5px) scale(0.995); filter: blur(1.5px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+
+  .session-body { padding: 0; flex: 1; display: flex; flex-direction: column; }
+  .shortcut-hint {
+    padding: 20px 18px 16px;
+    max-height: 200px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 300ms ease, opacity 250ms ease, padding 300ms ease;
+    animation: fadeIn 250ms ease-out;
+  }
+  .shortcut-hint.collapsed {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .shortcut-hint h3 {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-secondary); margin-bottom: 4px;
+  }
+  .shortcut-hint p {
+    font-size: 11.5px; color: var(--text-tertiary);
+  }
+
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 350ms cubic-bezier(0.16,1,0.3,1),
+                opacity 250ms ease-out;
+  }
+  .chat-area.active {
+    max-height: 400px;
+    opacity: 1;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+
+  .messages {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .msg.user {
+    background: rgba(110,160,255,0.15);
+    border: 1px solid rgba(110,160,255,0.18);
+    border-radius: 12px;
+    color: #fff;
+    align-self: flex-end;
+  }
+  .msg.assistant {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 12px;
+    color: var(--text-primary);
+    align-self: flex-start;
+  }
+
+  .chat-input-row {
+    margin: 0 14px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 8px 12px;
+    transition: border-color 200ms, box-shadow 200ms;
+  }
+  .chat-input-row:focus-within {
+    border-color: rgba(110,160,255,0.24);
+    box-shadow: 0 0 0 3px rgba(110,160,255,0.06);
+  }
+  .chat-input-row input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-family: inherit;
+  }
+  .chat-input-row input::placeholder { color: var(--text-tertiary); }
+  .send-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #edf1f7;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #050608; font-size: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    transition: background 150ms, box-shadow 150ms;
+  }
+  .send-btn:hover {
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.34);
+  }
+  .send-btn:disabled { opacity: 0.35; cursor: default; }
+
+  .session-footer { padding: 0 16px 12px; }
+  .divider { height: 1px; background: var(--border-subtle); margin: 10px 0; }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .quit-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary);
+    font-family: inherit;
+    transition: color 150ms;
+    letter-spacing: 0.01em;
+  }
+  .quit-btn:hover { color: var(--destructive-text); }
+  .footer-actions { display: flex; align-items: center; gap: 6px; }
+  .dock-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 150ms, border-color 150ms;
+    letter-spacing: 0.01em;
+  }
+  .dock-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+  .pin-btn.pinned {
+    background: var(--accent-subtle);
+    border-color: rgba(79,126,255,0.35);
+    color: var(--accent-text);
+  }
+
+  /* ── ACTIVITY LOG (Tasks tab) ── */
+  .tasks-body { padding: 0 0 8px; }
+
+  .activity-now {
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .activity-section-label {
+    font-size: 9px; font-weight: 700;
+    color: var(--text-tertiary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .activity-active-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 10px;
+  }
+  .activity-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 3px;
+    box-shadow: 0 0 0 0 rgba(79,126,255,0.5);
+    animation: actPulse 1.4s ease-out infinite;
+  }
+  @keyframes actPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(79,126,255,0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(79,126,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(79,126,255,0); }
+  }
+  .activity-active-text {
+    flex: 1; min-width: 0;
+  }
+  .activity-active-title {
+    font-size: 12.5px; font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-active-sub {
+    font-size: 11px; color: var(--text-tertiary);
+    margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-live-badge {
+    font-size: 9px; font-weight: 700;
+    color: var(--accent-text);
+    letter-spacing: 0.5px;
+    background: rgba(79,126,255,0.12);
+    border: 1px solid rgba(79,126,255,0.22);
+    border-radius: 4px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+
+  .activity-log {
+    padding: 10px 16px 0;
+  }
+  .activity-log-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(42,50,72,0.5);
+    cursor: default;
+    transition: background 150ms;
+    border-radius: 6px;
+    padding-left: 4px; padding-right: 4px;
+  }
+  .activity-log-row:last-child { border-bottom: none; }
+  .activity-log-row:hover { background: rgba(255,255,255,0.02); }
+
+  .activity-check {
+    width: 16px; height: 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .activity-check.done {
+    background: rgba(52,211,153,0.12);
+    border: 1px solid rgba(52,211,153,0.3);
+  }
+  .activity-check.done::after {
+    content: '';
+    display: block;
+    width: 5px; height: 3px;
+    border-left: 1.5px solid #34d399;
+    border-bottom: 1.5px solid #34d399;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+
+  .activity-log-text { flex: 1; min-width: 0; }
+  .activity-log-title {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-log-sub {
+    font-size: 10.5px; color: var(--text-tertiary);
+    margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-time {
+    font-size: 10px; color: var(--text-tertiary);
+    flex-shrink: 0; margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  #sessionName[contenteditable="true"] {
+    outline: none;
+    border-bottom: 1.5px solid var(--accent-text);
+    padding-bottom: 1px;
+    cursor: text;
+    min-width: 30px;
+    display: inline-block;
+    color: var(--accent-text);
+  }
+  .shortcut-chips {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 4px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    user-select: none;
+  }
+  .kbd-sep {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+  .shortcut-desc {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+  }
+  .rename-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1E1E1E;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .rename-toast.show { opacity: 1; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .empty-icon { font-size: 32px; color: var(--border-subtle); margin-bottom: 8px; }
+  .empty-title { font-size: 13px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .empty-sub { font-size: 12px; color: var(--border-strong); }
+
+  .settings-page, .integrations-page, .theme-page, .theme-customization-page {
+    display: none;
+    flex-direction: column;
+    min-height: 360px;
+    max-height: 580px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-subtle) transparent;
+  }
+  .settings-page.active, .integrations-page.active, .theme-page.active, .theme-customization-page.active {
+    display: flex;
+    animation: slideInRight 300ms cubic-bezier(0.22,1,0.36,1);
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(14px) scale(0.995); filter: blur(1.5px); }
+    to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  }
+
+  .back-row {
+    height: 44px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent-text);
+    width: 28px; height: 28px; padding: 0;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    transition: color 150ms, background 150ms;
+  }
+  .back-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .back-btn:hover { color: var(--accent); background: var(--accent-subtle); }
+  .back-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+  .settings-scroll { overflow-y: auto; flex: 1; }
+
+  .settings-section-header {
+    font-size: 10px; font-weight: 600;
+    color: var(--text-tertiary);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 20px 16px 8px;
+  }
+
+  .settings-row {
+    min-height: 52px;
+    padding: 0 16px;
+    border-bottom: 1px solid #1A1A1A;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 150ms;
+  }
+  .settings-row:hover { background: var(--surface-1); }
+  .settings-row.no-hover { cursor: default; }
+  .settings-row.no-hover:hover { background: transparent; }
+  .settings-row.destructive .row-label,
+  .settings-row.destructive .row-icon { color: var(--destructive-text) !important; }
+
+  .row-icon { width: 20px; height: 20px; color: var(--text-tertiary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .row-icon svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .row-content { flex: 1; }
+  .row-label { font-size: 14px; color: var(--text-primary); }
+  .row-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .row-right { display: flex; align-items: center; gap: 6px; color: var(--text-tertiary); font-size: 13px; }
+  .row-chevron { font-size: 12px; color: var(--border-strong); }
+
+  .toggle {
+    width: 44px; height: 26px; border-radius: 13px;
+    background: var(--border-subtle);
+    position: relative; cursor: pointer;
+    transition: background 250ms;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: white;
+    top: 3px; left: 3px;
+    transition: transform 250ms;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  .settings-row.with-desc { min-height: auto; padding: 12px 16px; }
+
+  .theme-card {
+    margin: 10px 16px 8px;
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.022));
+  }
+  .theme-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .theme-card-desc {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--text-tertiary);
+  }
+  .custom-control {
+    padding: 13px 16px 14px;
+    border-bottom: 1px solid #1A1A1A;
+  }
+  .custom-control-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 9px;
+  }
+  .custom-control-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .custom-control-value {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+  .custom-control-hint {
+    margin-top: 7px;
+    font-size: 10.5px;
+    color: rgba(104,115,134,0.82);
+  }
+  .theme-reset-row {
+    padding: 16px;
+  }
+  .theme-reset-btn {
+    width: 100%;
+    height: 36px;
+    border-radius: 9px;
+    border: 1px solid rgba(110,160,255,0.18);
+    background: rgba(110,160,255,0.08);
+    color: var(--accent-text);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
+  }
+  .theme-reset-btn:hover {
+    background: rgba(110,160,255,0.13);
+    border-color: rgba(110,160,255,0.30);
+  }
+  .theme-reset-btn:active { transform: scale(0.985); }
+  .custom-range {
+    width: 100%;
+    height: 18px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .custom-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(110,160,255,0.82), rgba(117,231,190,0.48));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .custom-range::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: #eef4ff;
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45), 0 0 18px rgba(110,160,255,0.28);
+  }
+  .custom-range::-moz-range-track {
+    height: 4px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(110,160,255,0.82), rgba(117,231,190,0.48));
+  }
+  .custom-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #eef4ff;
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+
+  .search-bar {
+    margin: 12px 16px;
+    height: 40px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .search-bar span { font-size: 14px; color: var(--text-tertiary); }
+  .search-bar input {
+    flex: 1;
+    background: none; border: none; outline: none;
+    font-size: 13px; color: var(--text-primary);
+    font-family: inherit;
+  }
+  .search-bar input::placeholder { color: var(--border-strong); }
+
+  .integration-row {
+    padding: 14px 16px;
+    border-bottom: 1px solid #1A1A1A;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background 150ms;
+    cursor: default;
+  }
+  .integration-row:hover { background: var(--surface-1); }
+  .integration-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .integration-icon.ableton { background: #FF6B00; }
+  .integration-icon.notebook { background: #1A73E8; }
+  .integration-icon.mem0 { background: #7C3AED; }
+  .integration-icon.pluginbridge { background: linear-gradient(135deg, #4F8EFF, #34D399); }
+
+  .integration-info { flex: 1; }
+  .integration-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+  .integration-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.4; }
+  .integration-status { flex-shrink: 0; }
+
+  .connect-btn {
+    background: var(--accent);
+    border: none; border-radius: 12px;
+    padding: 7px 14px;
+    font-size: 12px; font-weight: 600; color: white;
+    cursor: pointer; font-family: inherit;
+    transition: background 150ms;
+  }
+  .connect-btn:hover { background: var(--accent-hover); }
+
+  .live-indicator {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--success);
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+
+  .app-footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 11px;
+    color: var(--border-strong);
+  }
+
+  /* ── ACTION BUTTONS BELOW AI MESSAGE ── */
+  .msg-actions {
+    display: flex; gap: 6px; margin-top: 6px; align-items: center;
+  }
+  .btn-copy {
+    background: none; border: 1px solid var(--border-subtle);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 11px; font-weight: 500; color: var(--text-tertiary);
+    cursor: pointer; font-family: inherit;
+    transition: border-color 150ms, color 150ms;
+  }
+  .btn-copy:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+  .btn-execute {
+    background: linear-gradient(135deg, rgba(52,211,153,0.12), rgba(16,185,129,0.08));
+    border: 1px solid rgba(52,211,153,0.3);
+    border-radius: 7px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600; color: #6ee7b7;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 0 12px rgba(52,211,153,0.08);
+    transition: background 150ms, border-color 150ms, box-shadow 150ms;
+  }
+  .btn-execute:hover {
+    background: linear-gradient(135deg, rgba(52,211,153,0.22), rgba(16,185,129,0.15));
+    border-color: rgba(52,211,153,0.5);
+    box-shadow: 0 0 16px rgba(52,211,153,0.15);
+  }
+  .btn-execute.flashed {
+    background: linear-gradient(135deg, rgba(52,211,153,0.35), rgba(16,185,129,0.25));
+    box-shadow: 0 0 20px rgba(52,211,153,0.25);
+    border-color: #34D399;
+  }
+
+  /* ── CHAT TOOLBAR ── */
+  .chat-toolbar {
+    display: flex; align-items: center;
+    border-top: 1px solid var(--border-subtle);
+    height: 36px; padding: 0 8px;
+    gap: 2px; position: relative;
+  }
+  .toolbar-btn {
+    background: none; border: none;
+    border-radius: 6px; padding: 4px 8px;
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary); cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+    transition: background 150ms, color 150ms;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .toolbar-btn:hover { background: var(--surface-2); color: var(--text-secondary); }
+  .toolbar-btn.active-live {
+    color: var(--accent-text);
+    background: rgba(79,126,255,0.10);
+    border-radius: 6px;
+  }
+  /* Live button dot indicator */
+  #btnLive::before {
+    content: '';
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent-text);
+    margin-right: 4px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  #btnLive.active-live::before { opacity: 1; }
+  .toolbar-btn.active-voice { color: #34D399; }
+  .voice-pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #34D399;
+    animation: voicePulse 1s ease-in-out infinite;
+    display: none;
+  }
+  .toolbar-btn.active-voice .voice-pulse { display: block; }
+  @keyframes voicePulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.6); opacity: 0.5; }
+  }
+  .toolbar-divider {
+    width: 1px; height: 16px;
+    background: var(--border-subtle); margin: 0 4px; flex-shrink: 0;
+  }
+  .toolbar-btn.auto-exec-on {
+    color: #6ee7b7;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.2);
+    border-radius: 6px;
+  }
+  .auto-exec-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #34D399; display: none; flex-shrink: 0;
+    animation: voicePulse 1.2s ease-in-out infinite;
+  }
+  .toolbar-btn.auto-exec-on .auto-exec-dot { display: block; }
+  .source-btn {
+    margin-left: auto;
+    position: relative;
+  }
+
+  /* Source dropdown */
+  .source-dropdown {
+    position: absolute; bottom: 44px; right: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    overflow: hidden;
+    display: none;
+    z-index: 100;
+    animation: dropUp 150ms ease-out;
+  }
+  .source-dropdown.open { display: block; }
+  @keyframes dropUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .source-option {
+    padding: 9px 14px;
+    font-size: 12px; color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background 120ms;
+  }
+  .source-option:hover { background: var(--surface-3); }
+  .source-option.selected { color: var(--text-primary); font-weight: 600; }
+
+  /* executed toast */
+  .exec-toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(10,18,30,0.95), rgba(15,22,35,0.95));
+    border: 1px solid rgba(52,211,153,0.3);
+    color: #6ee7b7; font-size: 12px; font-weight: 500;
+    padding: 7px 16px; border-radius: 10px;
+    opacity: 0; pointer-events: none;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(52,211,153,0.08);
+    transition: opacity 250ms ease-out;
+    z-index: 999; white-space: nowrap;
+  }
+  .exec-toast.show { opacity: 1; }
+
+  /* ── FLOATING CHAT WINDOW (v3 style) ── */
+  .float-chat {
+    --fc-glow-rgb: 102, 153, 255;
+    --fc-glow-border: rgba(102,153,255,0.68);
+    position: fixed;
+    z-index: 900;
+    width: var(--chat-window-width);
+    left: 50%;
+    background: rgba(7,8,11,var(--chat-window-alpha));
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 18px 56px rgba(0,0,0,0.64), inset 0 1px 0 rgba(255,255,255,0.045);
+    overflow: visible;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(0);
+    transform-origin: top center;
+    clip-path: inset(0 calc(50% - 60px) calc(100% - 32px) calc(50% - 60px) round 16px);
+    will-change: clip-path, opacity, transform;
+    transition: clip-path 430ms cubic-bezier(0.19,1,0.22,1),
+                opacity 220ms ease-out,
+                transform 430ms cubic-bezier(0.19,1,0.22,1);
+  }
+  .float-chat::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    border: 2px solid var(--fc-glow-border);
+    box-shadow:
+      0 0 0 1px rgba(var(--fc-glow-rgb),var(--fc-glow-a0)),
+      0 0 18px rgba(var(--fc-glow-rgb),var(--fc-glow-a1)),
+      0 0 44px rgba(var(--fc-glow-rgb),var(--fc-glow-a2)),
+      0 0 92px rgba(var(--fc-glow-rgb),var(--fc-glow-a3)),
+      0 0 132px rgba(var(--fc-glow-rgb),var(--fc-glow-a4));
+    transform: scale(0.986);
+  }
+  /* Attached — below notch, CSS-centered */
+  .float-chat.fc-attached {
+    position: relative;
+    left: auto;
+    top: auto !important;
+    z-index: 1;
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0 round 0);
+    transform: none;
+    background: rgba(7,9,13,var(--panel-alpha));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,0.065);
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  /* Detached — freely floating, position set via JS */
+  .float-chat.fc-detached {
+    width: var(--chat-window-width);
+    opacity: 1;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0 round 16px);
+    background: rgba(7,8,11,var(--chat-window-alpha));
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 18px 56px rgba(0,0,0,0.64), inset 0 1px 0 rgba(255,255,255,0.045);
+    overflow: visible;
+    /* left / top / transform overridden by JS */
+  }
+  .float-chat.fc-pulling-out {
+    transform: translateY(-2px) scale(1.012) !important;
+    box-shadow:
+      0 24px 72px rgba(0,0,0,0.72),
+      0 0 0 1px rgba(126,166,255,0.08),
+      0 0 34px rgba(91,131,255,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.075);
+    transition:
+      left 260ms cubic-bezier(0.16,1,0.3,1),
+      top 260ms cubic-bezier(0.16,1,0.3,1),
+      transform 260ms cubic-bezier(0.16,1,0.3,1),
+      box-shadow 260ms ease,
+      clip-path 260ms cubic-bezier(0.16,1,0.3,1);
+  }
+  .float-chat.fc-docking {
+    transform: none !important;
+    background: rgba(7,9,13,0.98);
+    border-color: rgba(255,255,255,0);
+    border-radius: 0;
+    box-shadow: 0 0 0 rgba(0,0,0,0), inset 0 1px 0 rgba(255,255,255,0.02);
+    transition:
+      left 300ms cubic-bezier(0.22,1,0.36,1),
+      top 300ms cubic-bezier(0.22,1,0.36,1),
+      width 300ms cubic-bezier(0.22,1,0.36,1),
+      background 220ms ease,
+      border-color 220ms ease,
+      border-radius 300ms cubic-bezier(0.22,1,0.36,1),
+      transform 300ms cubic-bezier(0.22,1,0.36,1),
+      box-shadow 240ms ease;
+  }
+  /* Fade-out when closing */
+  .float-chat.fc-closing {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    clip-path: inset(0 calc(50% - 60px) calc(100% - 32px) calc(50% - 60px) round 16px) !important;
+    transform: translateX(-50%) translateY(0) !important;
+    transition: clip-path 340ms cubic-bezier(0.4,0,0.2,1),
+                opacity 240ms ease,
+                transform 340ms cubic-bezier(0.4,0,0.2,1) !important;
+  }
+
+  /* ── Header (unified drag area) ── */
+  .fc-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    /* Attached: thin invisible handle */
+    height: 18px;
+    border-bottom: none;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  .float-chat.fc-attached .fc-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    height: 18px;
+    padding: 0;
+    opacity: 0;
+    pointer-events: auto;
+  }
+  .float-chat.fc-attached:hover .fc-header { opacity: 0; }
+  /* Detached: full bar */
+  .float-chat.fc-detached .fc-header {
+    height: 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    opacity: 1;
+  }
+  .float-chat.fc-docking .fc-header {
+    opacity: 0 !important;
+    border-bottom-color: rgba(255,255,255,0);
+    transition: opacity 150ms ease, border-bottom-color 150ms ease;
+  }
+  .float-chat.fc-docking .fc-x-btn {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .float-chat.fc-exiting {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-7px) scale(0.965) !important;
+    filter: blur(2px);
+    clip-path: inset(8px 10px 10px 10px round 14px) !important;
+    box-shadow: 0 10px 34px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.025);
+    transition:
+      opacity 260ms ease,
+      transform 300ms cubic-bezier(0.22,1,0.36,1),
+      filter 260ms ease,
+      clip-path 300ms cubic-bezier(0.22,1,0.36,1),
+      box-shadow 260ms ease !important;
+  }
+  .float-chat.fc-glow-pulse::after {
+    animation: fcGlowPulse 520ms cubic-bezier(0.16,1,0.3,1);
+  }
+  .float-chat.fc-hide-glow::after {
+    animation: fcHideGlow 240ms cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes fcGlowPulse {
+    0% { opacity: 0; transform: scale(0.992); }
+    24% { opacity: 1; transform: scale(1.01); }
+    64% { opacity: 0.72; transform: scale(1.028); }
+    100% { opacity: 0; transform: scale(1.052); }
+  }
+  @keyframes fcHideGlow {
+    0% { opacity: 1; transform: scale(1.012); }
+    42% { opacity: 0.82; transform: scale(1.024); }
+    100% { opacity: 0; transform: scale(0.972); }
+  }
+  .fc-header.dragging { cursor: grabbing; }
+  .fc-header-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .fc-grip { display: flex; gap: 3px; opacity: 0.28; }
+  .fc-grip span {
+    display: block; width: 4px; height: 4px;
+    border-radius: 50%; background: rgba(255,255,255,0.6);
+  }
+  .fc-tip {
+    font-size: 10.5px; color: rgba(255,255,255,0.22);
+    display: flex; align-items: center; gap: 5px;
+    transition: opacity 600ms ease;
+  }
+  /* Tip: only shown when detached */
+  .float-chat.fc-attached .fc-tip { display: none; }
+  .fc-tip.tip-out { opacity: 0; pointer-events: none; }
+  .fc-kchip {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 5px; padding: 1px 5px;
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.32);
+    font-family: inherit;
+  }
+  /* × button: hidden when attached, re-attaches when detached */
+  .float-chat.fc-attached .fc-x-btn { display: none; }
+  .fc-x-btn {
+    background: none; border: none; cursor: pointer;
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.22); transition: background 150ms, color 150ms;
+  }
+  /* Blue = "return to notch" (not close) */
+  .fc-x-btn:hover { background: rgba(77,142,255,0.12); color: rgba(77,142,255,0.85); }
+  /* messages */
+  .fc-messages {
+    max-height: 240px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 8px 0;
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent;
+  }
+  .fc-messages::-webkit-scrollbar { width: 3px; }
+  .fc-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+  .fc-user-msg {
+    margin: 4px 14px 4px auto; max-width: 82%;
+    background: rgba(110,160,255,0.13); border: 1px solid rgba(110,160,255,0.17);
+    border-radius: 16px 16px 4px 16px;
+    padding: 9px 13px; font-size: 13px; color: rgba(255,255,255,0.82);
+    line-height: 1.55; word-break: break-word;
+  }
+  .fc-ai-msg {
+    padding: 6px 16px 2px;
+    font-size: 13.5px; color: #f0f2f8; line-height: 1.65;
+  }
+  .fc-actions {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 14px 10px;
+  }
+  .fc-copy-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 8px;
+    background: none; border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.32); font-size: 11.5px;
+    cursor: pointer; font-family: inherit; transition: all 150ms;
+  }
+  .fc-copy-btn:hover {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.68);
+    border-color: rgba(255,255,255,0.14);
+  }
+  .fc-exec-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 13px; border-radius: 8px;
+    background: rgba(90,211,154,0.10); border: 1px solid rgba(90,211,154,0.22);
+    color: #7fe0af; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 150ms;
+  }
+  .fc-exec-btn:hover { background: rgba(90,211,154,0.16); border-color: rgba(90,211,154,0.36); box-shadow: 0 0 14px rgba(90,211,154,0.08); }
+  .fc-exec-btn:active { transform: scale(0.96); }
+  @keyframes fcExecFlash { 0%{background:rgba(31,204,110,0.35);box-shadow:0 0 24px rgba(31,204,110,0.4)} 100%{background:rgba(31,204,110,0.10);box-shadow:none} }
+  .fc-exec-btn.flashed { animation: fcExecFlash 400ms ease forwards; }
+  /* input row */
+  .fc-input-row {
+    height: 48px; display: flex; align-items: center;
+    padding: 0 14px; gap: 9px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .fc-logo-icon {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fc-query-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: inherit; font-size: 13.5px; color: #f5f5f7;
+    caret-color: rgba(110,160,255,0.9);
+  }
+  .fc-query-input::placeholder { color: rgba(255,255,255,0.24); }
+  .fc-send-btn {
+    width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
+    background: #edf1f7; border: 1px solid rgba(255,255,255,0.16);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #050608; font-size: 14px;
+    font-family: inherit; user-select: none; transition: all 150ms;
+  }
+  .fc-send-btn:hover { background: #ffffff; border-color: rgba(255,255,255,0.24); color: #050608; }
+  .fc-send-btn:active { transform: scale(0.90); }
+  /* toolbar */
+  .fc-toolbar {
+    height: 40px; border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center; padding: 0 8px; gap: 1px;
+    border-radius: 0 0 18px 18px; position: relative;
+  }
+  .fc-tool {
+    display: flex; align-items: center; gap: 4px; padding: 5px 9px;
+    border-radius: 8px; font-size: 11.5px; color: rgba(255,255,255,0.36);
+    cursor: pointer; background: none; border: none;
+    font-family: inherit; white-space: nowrap; user-select: none;
+    transition: all 150ms; position: relative;
+  }
+  .fc-tool:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.72); }
+  .fc-tool.on { color: rgba(77,142,255,0.85); background: rgba(77,142,255,0.08); }
+  .fc-tool.on:hover { background: rgba(77,142,255,0.14); color: #7aacff; }
+  .fc-tool.voice-on { color: rgba(31,204,110,0.85); background: rgba(31,204,110,0.08); }
+  .fc-tool.auto-on { color: rgba(31,204,110,0.85); background: rgba(31,204,110,0.08); }
+  .fc-tool-div { width: 1px; height: 16px; background: rgba(255,255,255,0.07); margin: 0 3px; flex-shrink: 0; }
+  .fc-spacer { flex: 1; }
+  .fc-tool-right {
+    display: flex; align-items: center; gap: 3px; padding: 5px 9px;
+    border-radius: 8px; font-size: 11.5px; color: rgba(255,255,255,0.28);
+    cursor: pointer; background: none; border: none;
+    font-family: inherit; white-space: nowrap; user-select: none; transition: all 150ms;
+  }
+  .fc-tool-right:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); }
+  .fc-voice-ring {
+    display: none; position: absolute; top: -5px; right: -5px;
+    width: 9px; height: 9px; border-radius: 50%; background: #1fcc6e;
+  }
+  .fc-voice-ring::after {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    border: 1.5px solid rgba(31,204,110,0.4);
+    animation: fcVRing 1.2s ease-out infinite;
+  }
+  @keyframes fcVRing { 0%{transform:scale(1);opacity:.8} 100%{transform:scale(2.2);opacity:0} }
+  .fc-tool.voice-on .fc-voice-ring { display: block; }
+  .fc-auto-dot { display: none; width: 5px; height: 5px; border-radius: 50%; background: #1fcc6e; margin-left: 1px; }
+  .fc-tool.auto-on .fc-auto-dot { display: block; }
+  /* source menu */
+  .fc-src-menu {
+    position: absolute; bottom: calc(100% + 6px); right: 8px;
+    background: rgba(14,14,18,0.97); backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.10); border-radius: 14px;
+    padding: 6px; min-width: 168px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.07);
+    z-index: 100;
+    opacity: 0; pointer-events: none; transform: translateY(6px);
+    transition: opacity 180ms cubic-bezier(0.16,1,0.3,1), transform 180ms cubic-bezier(0.16,1,0.3,1);
+  }
+  .fc-src-menu.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+  .fc-src-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px; border-radius: 9px; cursor: pointer;
+    font-size: 12.5px; color: rgba(255,255,255,0.52); transition: all 120ms; gap: 10px;
+  }
+  .fc-src-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+  .fc-src-item.sel { color: #7aacff; background: rgba(77,142,255,0.08); }
+  .fc-src-tick { font-size: 11px; color: #7aacff; opacity: 0; }
+  .fc-src-item.sel .fc-src-tick { opacity: 1; }
+  .fc-src-div { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+
+  /* ── SHORTCUT RECORDER (inline) ── */
+  .shortcuts-shell {
+    padding: 12px 14px 16px;
+  }
+  .shortcut-group {
+    margin-bottom: 14px;
+  }
+  .shortcut-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    margin: 6px 2px 8px;
+  }
+  .shortcut-card {
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+  .shortcut-card.recording {
+    background: rgba(79,126,255,0.075);
+    border-color: rgba(79,126,255,0.34);
+    box-shadow: 0 0 30px rgba(79,126,255,0.10), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .shortcut-row {
+    min-height: 58px;
+    padding: 11px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    transition: background 180ms ease;
+  }
+  .shortcut-card.recording .shortcut-row {
+    background: rgba(79,126,255,0.08);
+  }
+  .shortcut-row:last-child { border-bottom: none; }
+  .shortcut-main { min-width: 0; flex: 1; }
+  .shortcut-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .shortcut-sub {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-tertiary);
+  }
+  .shortcut-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .shortcut-display {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    min-height: 28px;
+  }
+  .shortcut-capture {
+    min-width: 190px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(110,160,255,0.28);
+    background: rgba(110,160,255,0.10);
+    color: rgba(220,231,255,0.74);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 0 18px rgba(79,126,255,0.08);
+  }
+  .shortcut-edit-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer; font-family: inherit;
+    padding: 5px 10px; border-radius: 7px;
+    transition: color 150ms, background 150ms, border-color 150ms;
+    letter-spacing: 0.02em;
+  }
+  .shortcut-edit-btn:hover {
+    color: #ffffff;
+    background: rgba(110,160,255,0.18);
+    border-color: rgba(110,160,255,0.32);
+  }
+
+  .inline-recorder {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 10px 10px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(67,126,255,0.28), rgba(57,92,210,0.20));
+    border: 1px solid rgba(118,160,255,0.45);
+    border-radius: 10px;
+    box-shadow: 0 0 34px rgba(79,126,255,0.16), inset 0 1px 0 rgba(255,255,255,0.08);
+    animation: fadeIn 200ms ease-out;
+  }
+  .inline-recorder.active { display: flex; }
+
+  .inline-recorder-hint {
+    font-size: 12px;
+    font-weight: 700;
+    color: #dce7ff;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hint-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #8fb5ff;
+    animation: voicePulse 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .inline-recorder-keys {
+    display: flex; align-items: center;
+    gap: 6px; flex-wrap: wrap;
+    min-height: 34px;
+  }
+
+  .recorder-key {
+    background: linear-gradient(180deg, var(--surface-4) 0%, var(--surface-3) 100%);
+    border: 1px solid var(--border-strong);
+    border-bottom: 2px solid rgba(0,0,0,0.5);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
+    animation: keyPop 120ms cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes keyPop {
+    from { transform: scale(0.8); opacity: 0.4; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .recorder-plus {
+    font-size: 11px; color: var(--text-tertiary); font-weight: 400;
+  }
+
+  .recorder-waiting {
+    font-size: 12px; color: rgba(220,231,255,0.70);
+    letter-spacing: 0.01em;
+  }
+
+  .inline-recorder-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 2px;
+  }
+  .recorder-auto-hint {
+    font-size: 10px; color: rgba(220,231,255,0.58);
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="desktop" id="desktop">
+  <div class="menu-bar">
+    <div class="menu-left">
+      <span class="menu-apple"></span>
+      <span>Finder</span>
+      <span>File</span>
+      <span>Edit</span>
+      <span>View</span>
+      <span>Go</span>
+      <span>Window</span>
+      <span>Help</span>
+    </div>
+    <div class="menu-right">
+      <span>⌘</span>
+      <span>⌥</span>
+      <span>Wi‑Fi</span>
+      <span>100%</span>
+      <span>Tue 8:04 AM</span>
+    </div>
+  </div>
+
+  <div class="notch-zone" id="notchZone">
+    <div class="notch" id="notch">
+      <!-- DEFAULT: empty -->
+      <!-- LISTENING STATE -->
+      <div class="notch-state" id="notchListening">
+        <div class="wave-bars">
+          <span class="bar" style="animation-duration:0.5s"></span>
+          <span class="bar" style="animation-duration:0.7s"></span>
+          <span class="bar" style="animation-duration:0.4s"></span>
+          <span class="bar" style="animation-duration:0.6s"></span>
+          <span class="bar" style="animation-duration:0.45s"></span>
+        </div>
+        <span class="notch-label listening-label">Listening</span>
+      </div>
+      <!-- THINKING STATE -->
+      <div class="notch-state" id="notchThinking">
+        <div class="think-dots">
+          <span class="dot" style="animation-delay:0s"></span>
+          <span class="dot" style="animation-delay:0.2s"></span>
+          <span class="dot" style="animation-delay:0.4s"></span>
+        </div>
+        <span class="notch-label thinking-label">Thinking</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-wrap hidden-state" id="panelWrap">
+    <div class="panel" id="panel">
+      <div class="top-nav" id="topNav">
+        <div class="tab-group">
+          <div class="tab active" onclick="switchPage('session')" id="tab-session" ondblclick="renameSession(this)" title="Double-click to rename session"><span id="sessionName">Session</span></div>
+          <div class="tab" onclick="switchPage('tasks')" id="tab-tasks">Timeline</div>
+          <div class="tab" id="tab-actions" onclick="switchPage('actions')">Actions</div>
+        </div>
+        <div class="nav-right">
+          <!-- Mode Select -->
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-tertiary);cursor:pointer;">
+            <select id="harness-mode-select" style="background:var(--surface-2); border:1px solid var(--border-subtle); color:var(--text-primary); padding:2px 4px; border-radius:4px; font-size:11px;">
+              <option value="live">Live Mode</option>
+              <option value="sandbox">AI Sandbox</option>
+              <option value="demo">Demo / Mock</option>
+            </select>
+          </label>
+          <div class="status-dot" id="statusDot"></div>
+          <button class="gear-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5V3M8 13V14.5M14.5 8H13M3 8H1.5M12.36 3.64L11.3 4.7M4.7 11.3L3.64 12.36M12.36 12.36L11.3 11.3M4.7 4.7L3.64 3.64"/></svg></button>
+        </div>
+      </div>
+
+      <div class="page active" id="page-session">
+        <div class="session-body">
+          <div class="shortcut-hint" id="shortcutHint">
+            <h3>Voice Activation</h3>
+            <p>Hold to speak, release to send — works globally.</p>
+            <div class="shortcut-chips">
+              <span class="kbd">⌃ Control</span>
+              <span class="kbd-sep">+</span>
+              <span class="kbd">⌘ Command</span>
+            </div>
+          </div>
+
+          <div class="chat-area" id="chatArea" style="display:none;">
+            <div class="messages" id="messages">
+              <div class="msg-wrap">
+                <div class="msg assistant">AI Sandbox ready. Type a command and I'll propose an action for your approval before anything touches Ableton.</div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" placeholder="Ask Conductor..." id="chatInput">
+              <button class="send-btn" id="sendBtn">↑</button>
+            </div>
+            <!-- TOOLBAR -->
+            <div class="chat-toolbar">
+              <button class="toolbar-btn active-live" id="btnLive" onclick="toolbarLive()">Live</button>
+              <button class="toolbar-btn" id="btnAnalyze" onclick="toolbarAnalyze()">Analyze</button>
+              <button class="toolbar-btn" id="btnVoiceTool" onclick="toolbarVoice()">
+                Voice <span class="voice-pulse"></span>
+              </button>
+              <div class="toolbar-divider"></div>
+              <button class="toolbar-btn" id="btnAutoExec" onclick="toolbarAutoExec()" title="Automatically execute AI responses in Ableton">
+                Auto Exec <span class="auto-exec-dot"></span>
+              </button>
+              <div class="toolbar-divider"></div>
+              <div class="source-btn">
+                <button class="toolbar-btn" id="btnSource" onclick="toggleSourceDropdown()">Auto ▾</button>
+                <div class="source-dropdown" id="sourceDropdown">
+                  <div class="source-option selected" onclick="selectSource(this,'Auto')">Auto</div>
+                  <div class="source-option" onclick="selectSource(this,'Source files')">Source files</div>
+                  <div class="source-option" onclick="selectSource(this,'NotebookLM')">NotebookLM</div>
+                  <div class="source-option" onclick="selectSource(this,'Memory only')">Memory only</div>
+                  <div class="source-option" onclick="selectSource(this,'No sources')">No sources</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="session-footer" id="sessionFooter">
+          <div class="divider"></div>
+          <div class="footer-row">
+            <button class="quit-btn" onclick="alert('Quit Conductor?')">Quit Conductor</button>
+            <div class="footer-actions">
+              <button class="dock-btn pin-btn" id="pinBtn" onclick="togglePin()" title="Keep panel open when mouse leaves">Keep Open</button>
+              <button class="dock-btn" id="voiceBtn" onclick="toggleVoice()">Voice</button>
+              <button class="dock-btn" onclick="toggleChat()">Chat</button>
+              <button class="dock-btn">Dock</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-tasks">
+        <div class="tasks-body">
+          <div class="activity-now" style="border-bottom: none; padding-bottom: 0;">
+             <div class="activity-section-label" style="display:flex; justify-content:space-between; align-items:center;">
+               <span>Timeline Log</span>
+               <button id="reset-session-btn" style="background:none; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer;">Clear UI</button>
+             </div>
+             <div id="status-display" style="font-size: 11px; color: var(--accent-text); margin-bottom: 8px;">Idle</div>
+             <div id="coproducer-response" class="hidden" style="font-size: 12px; color: var(--text-primary); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; border-left: 2px solid var(--accent);"></div>
+          </div>
+          
+          <div class="activity-log" id="timeline-container">
+            <div class="timeline-empty" style="font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 20px;">Timeline is empty. Execute an action to begin.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIONS PAGE (INJECTED) -->
+      <div class="page" id="page-actions">
+        <div class="session-body" style="padding: 14px; overflow-y: auto;">
+          <div id="action-buttons-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+      </div>
+
+      <div class="settings-page" id="settingsPage">
+        <div class="back-row">
+          <button class="back-btn" onclick="closeSettings()"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14L6 9L11 4"/></svg></button>
+          <span class="back-title">Settings</span>
+        </div>
+        <div class="settings-scroll">
+          <div class="settings-section-header">Connections</div>
+          <div class="settings-row" onclick="openIntegrations()">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg></span>
+            <div class="row-content"><span class="row-label">Integrations</span></div>
+            <div class="row-right"><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+
+          <div class="settings-section-header">Customization</div>
+          <div class="settings-row" onclick="openShortcutsPage()">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="2"/><path d="M4.5 7.5h1M8 7.5h1M11.5 7.5h1M5.5 10.5h5"/></svg></span>
+            <div class="row-content"><span class="row-label">Shortcuts</span></div>
+            <div class="row-right"><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 8h1.5M13.5 8H15M3 6v4M5.5 3.5v9M8 5.5v5M10.5 3.5v9M13 6v4"/></svg></span>
+            <div class="row-content"><span class="row-label">Voice</span></div>
+            <div class="row-right"><span style="font-size:12px;color:var(--text-tertiary)">Classic</span><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="1.5" width="5" height="7" rx="2.5"/><path d="M3 8a5 5 0 0010 0"/><line x1="8" y1="13" x2="8" y2="15"/><line x1="5.5" y1="15" x2="10.5" y2="15"/></svg></span>
+            <div class="row-content"><span class="row-label">Microphone</span></div>
+            <div class="row-right"><span style="font-size:12px;color:var(--text-tertiary)">System Default</span><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5v7a1 1 0 001 1h10a1 1 0 001-1V7a1 1 0 00-1-1H8.5L7 4.5H3a1 1 0 00-1 1z"/></svg></span>
+            <div class="row-content"><span class="row-label">Agent Folder</span></div>
+            <div class="row-right"><span style="font-size:12px;color:var(--text-tertiary)">Conductor default</span><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2.5 4v4C2.5 11.5 5 13.8 8 14.5C11 13.8 13.5 11.5 13.5 8V4L8 1.5z"/></svg></span>
+            <div class="row-content"><span class="row-label">Agent Permissions</span></div>
+            <div class="row-right"><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row with-desc no-hover" style="cursor:default;">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 13.5h5M8 11.5v2"/></svg></span>
+            <div class="row-content">
+              <span class="row-label">Show in Dock</span>
+              <div class="row-desc">Turn off to keep Conductor notch only.</div>
+            </div>
+            <div class="toggle on" id="dockToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="settings-row" onclick="openThemePage()">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="10.6" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="5.4" cy="9.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+            <div class="row-content">
+              <span class="row-label">Theme</span>
+              <div class="row-desc">Window glow, size, and transparency.</div>
+            </div>
+            <div class="row-right"><span style="font-size:12px;color:var(--text-tertiary)">Custom</span><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+
+          <div class="settings-section-header">Updates &amp; Support</div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5v3.5h-3.5"/><path d="M2.5 13.5v-3.5h3.5"/><path d="M13.5 6a6 6 0 0 0-11 2"/><path d="M2.5 10a6 6 0 0 0 11-2"/></svg></span>
+            <div class="row-content"><span class="row-label">Check for Updates</span></div>
+            <div class="row-right"><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5"/><polyline points="1.5,4.5 8,9.5 14.5,4.5"/></svg></span>
+            <div class="row-content"><span class="row-label">DM us about bugs and requests</span></div>
+            <div class="row-right"><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+
+          <div class="settings-section-header">Account Actions</div>
+          <div class="settings-row">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6"/></svg></span>
+            <div class="row-content"><span class="row-label">Log Out</span></div>
+          </div>
+          <div class="settings-row destructive">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2V8"/><path d="M5 4A5.5 5.5 0 1 0 11 4"/></svg></span>
+            <div class="row-content"><span class="row-label">Quit Conductor</span></div>
+          </div>
+
+          <div class="app-footer">v1.0.0 (1)</div>
+        </div>
+      </div>
+
+      <div class="theme-page" id="themePage">
+        <div class="back-row">
+          <button class="back-btn" onclick="closeThemePage()"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14L6 9L11 4"/></svg></button>
+          <span class="back-title">Theme</span>
+        </div>
+        <div class="settings-scroll">
+          <div class="settings-section-header">Appearance</div>
+          <div class="settings-row" onclick="openThemeCustomizationPage()">
+            <span class="row-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5V4.5M8 13.5V2.5M13 10.5V5.5"/><circle cx="3" cy="8" r="1.8"/><circle cx="8" cy="5" r="1.8"/><circle cx="13" cy="8" r="1.8"/></svg></span>
+            <div class="row-content">
+              <span class="row-label">Customization</span>
+              <div class="row-desc">Glow, size, and transparency controls.</div>
+            </div>
+            <div class="row-right"><span style="font-size:12px;color:var(--text-tertiary)">5 controls</span><span class="row-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2l4 4-4 4"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-customization-page" id="themeCustomizationPage">
+        <div class="back-row">
+          <button class="back-btn" onclick="closeThemeCustomizationPage()"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14L6 9L11 4"/></svg></button>
+          <span class="back-title">Customization</span>
+        </div>
+        <div class="settings-scroll">
+          <div class="theme-card">
+            <div class="theme-card-title">Customization</div>
+            <div class="theme-card-desc">Tune the floating chat and notch window without changing how Conductor behaves.</div>
+          </div>
+
+          <div class="settings-section-header">Chat Window</div>
+          <div class="custom-control">
+            <div class="custom-control-head">
+              <span class="custom-control-label">Glow Intensity</span>
+              <span class="custom-control-value" id="chatGlowValue">100%</span>
+            </div>
+            <input class="custom-range" id="chatGlowRange" type="range" min="40" max="160" value="100" oninput="updateThemeControl('chatGlow', this.value)">
+          </div>
+          <div class="custom-control">
+            <div class="custom-control-head">
+              <span class="custom-control-label">Window Size</span>
+              <span class="custom-control-value" id="chatSizeValue">420px</span>
+            </div>
+            <input class="custom-range" id="chatSizeRange" type="range" min="360" max="520" value="420" oninput="updateThemeControl('chatSize', this.value)">
+          </div>
+          <div class="custom-control">
+            <div class="custom-control-head">
+              <span class="custom-control-label">Transparency</span>
+              <span class="custom-control-value" id="chatAlphaValue">4%</span>
+            </div>
+            <input class="custom-range" id="chatAlphaRange" type="range" min="0" max="55" value="4" oninput="updateThemeControl('chatAlpha', this.value)">
+            <div class="custom-control-hint">Higher value makes the detached chat more transparent.</div>
+          </div>
+
+          <div class="settings-section-header">Notch Window</div>
+          <div class="custom-control">
+            <div class="custom-control-head">
+              <span class="custom-control-label">Window Size</span>
+              <span class="custom-control-value" id="panelSizeValue">460px</span>
+            </div>
+            <input class="custom-range" id="panelSizeRange" type="range" min="420" max="560" value="460" oninput="updateThemeControl('panelSize', this.value)">
+          </div>
+          <div class="custom-control">
+            <div class="custom-control-head">
+              <span class="custom-control-label">Transparency</span>
+              <span class="custom-control-value" id="panelAlphaValue">2%</span>
+            </div>
+            <input class="custom-range" id="panelAlphaRange" type="range" min="0" max="50" value="2" oninput="updateThemeControl('panelAlpha', this.value)">
+            <div class="custom-control-hint">Higher value makes the notch panel more transparent.</div>
+          </div>
+          <div class="theme-reset-row">
+            <button class="theme-reset-btn" onclick="resetThemeDefaults()">Reset Appearance Defaults</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="integrations-page" id="integrationsPage">
+        <div class="back-row">
+          <button class="back-btn" onclick="closeIntegrations()"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14L6 9L11 4"/></svg></button>
+          <span class="back-title">Integrations</span>
+        </div>
+        <div class="search-bar">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+          <input type="text" placeholder="Search connections...">
+        </div>
+
+        <div class="integration-row">
+          <div class="integration-icon ableton" style="font-size:13px;font-weight:800;color:#fff;letter-spacing:-0.5px;">A</div>
+          <div class="integration-info">
+            <div class="integration-name">Ableton MCP</div>
+            <div class="integration-desc">Controls tracks, clips, devices in Ableton Live</div>
+          </div>
+          <div class="integration-status">
+            <div class="live-indicator"><div class="live-dot"></div> Connected</div>
+          </div>
+        </div>
+
+        <div class="integration-row">
+          <div class="integration-icon notebook" style="font-size:13px;font-weight:800;color:#fff;">N</div>
+          <div class="integration-info">
+            <div class="integration-name">NotebookLM</div>
+            <div class="integration-desc">Access your music knowledge base</div>
+          </div>
+          <div class="integration-status"><button class="connect-btn">Connect</button></div>
+        </div>
+
+        <div class="integration-row">
+          <div class="integration-icon mem0" style="font-size:13px;font-weight:800;color:#fff;">M</div>
+          <div class="integration-info">
+            <div class="integration-name">Mem0 Memory</div>
+            <div class="integration-desc">Remembers decisions across sessions</div>
+          </div>
+          <div class="integration-status">
+            <div class="live-indicator"><div class="live-dot"></div> Connected</div>
+          </div>
+        </div>
+
+        <div class="integration-row">
+          <div class="integration-icon pluginbridge" style="font-size:10px;font-weight:800;color:#fff;letter-spacing:-0.3px;">PB</div>
+          <div class="integration-info">
+            <div class="integration-name">Plugin Bridge</div>
+            <div class="integration-desc">Reads plugin chains, parameters, and track context</div>
+          </div>
+          <div class="integration-status">
+            <div class="live-indicator"><div class="live-dot"></div> Connected</div>
+          </div>
+        </div>
+
+        <div class="app-footer">4 integrations available</div>
+      </div>
+
+      <!-- SHORTCUTS SUB-PAGE -->
+      <div class="integrations-page" id="shortcutsPage">
+        <div class="back-row">
+          <button class="back-btn" onclick="closeShortcutsPage()"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 14L6 9L11 4"/></svg></button>
+          <span class="back-title">Shortcuts</span>
+        </div>
+        <div class="shortcuts-shell">
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">General</div>
+            <div class="shortcut-card">
+              <div class="shortcut-row">
+                <div class="shortcut-main">
+                  <div class="shortcut-name">Chat with Conductor</div>
+                  <div class="shortcut-sub">Open or hide the floating chat from anywhere.</div>
+                </div>
+                <div class="shortcut-controls">
+                  <div class="shortcut-display" id="chatShortcutDisplay">
+                    <span class="kbd">⌃ Control</span><span class="kbd-sep">+</span><span class="kbd">⌃ Control</span>
+                  </div>
+                  <button class="shortcut-edit-btn" id="chatEditBtn" onclick="startInlineRecord('chat')">Change</button>
+                </div>
+              </div>
+              <div class="inline-recorder" id="chatRecorder">
+                <div class="inline-recorder-hint">
+                  <span class="hint-dot"></span>
+                  Press your new shortcut keys
+                </div>
+                <div class="inline-recorder-keys" id="chatRecorderKeys">
+                  <span class="recorder-waiting">Waiting for input…</span>
+                </div>
+                <div class="inline-recorder-footer">
+                  <span class="recorder-auto-hint">Auto-saves when 2+ keys are released</span>
+                </div>
+              </div>
+            </div>
+            <div class="shortcut-card" style="margin-top:10px;">
+              <div class="shortcut-row">
+                <div class="shortcut-main">
+                  <div class="shortcut-name">Hide Floating Chat</div>
+                  <div class="shortcut-sub">Quickly hide or reopen the detached chat window.</div>
+                </div>
+                <div class="shortcut-controls">
+                  <div class="shortcut-display" id="hideShortcutDisplay">
+                    <span class="kbd">⌃ Control</span>
+                  </div>
+                  <button class="shortcut-edit-btn" id="hideEditBtn" onclick="startInlineRecord('hide')">Change</button>
+                </div>
+              </div>
+              <div class="inline-recorder" id="hideRecorder">
+                <div class="inline-recorder-hint">
+                  <span class="hint-dot"></span>
+                  Press your new shortcut key
+                </div>
+                <div class="inline-recorder-keys" id="hideRecorderKeys">
+                  <span class="recorder-waiting">Waiting for input…</span>
+                </div>
+                <div class="inline-recorder-footer">
+                  <span class="recorder-auto-hint">Auto-saves when the key is released</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Dictation</div>
+            <div class="shortcut-card">
+              <div class="shortcut-row">
+                <div class="shortcut-main">
+                  <div class="shortcut-name">Voice Activation</div>
+                  <div class="shortcut-sub">Hold to speak, release to send to Conductor.</div>
+                </div>
+                <div class="shortcut-controls">
+                  <div class="shortcut-display" id="voiceShortcutDisplay">
+                    <span class="kbd">⌃ Control</span><span class="kbd-sep">+</span><span class="kbd">⌘ Command</span>
+                  </div>
+                  <button class="shortcut-edit-btn" id="voiceEditBtn" onclick="startInlineRecord('voice')">Change</button>
+                </div>
+              </div>
+              <div class="inline-recorder" id="voiceRecorder">
+                <div class="inline-recorder-hint">
+                  <span class="hint-dot"></span>
+                  Press your new shortcut keys
+                </div>
+                <div class="inline-recorder-keys" id="voiceRecorderKeys">
+                  <span class="recorder-waiting">Waiting for input…</span>
+                </div>
+                <div class="inline-recorder-footer">
+                  <span class="recorder-auto-hint">Auto-saves when 2+ keys are released</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ FLOATING CHAT WINDOW (v3 style) ══ -->
+  <div class="float-chat" id="floatChat">
+
+    <!-- Header (drag handle — invisible when attached, full bar when detached) -->
+    <div class="fc-header" id="floatHeader">
+      <div class="fc-header-left">
+        <div class="fc-grip">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="fc-tip" id="floatTip">
+          Drag anywhere &nbsp;·&nbsp; <span class="fc-kchip">⌃</span>&nbsp;to hide
+        </div>
+      </div>
+      <!-- × = close floating chat in place (only visible when detached) -->
+      <button class="fc-x-btn" onclick="closeDetachedChat()" title="Close floating chat">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+
+    <!-- Messages -->
+    <div class="fc-messages" id="floatMessages">
+      <div class="fc-ai-msg">Hey, I'm Conductor. Ask me anything about your session — mixing, arrangement, creative direction, or just run mock execution.</div>
+      <div class="fc-actions">
+        <button class="fc-copy-btn" onclick="fcCopy(this)">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+          Copy
+        </button>
+        <button class="fc-exec-btn" onclick="fcExec(this)">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg>
+          (Demo) Mock Execution
+        </button>
+      </div>
+      <div class="fc-user-msg">Create a cinematic pad with strings and tabla for my A.R. Rahman-style track</div>
+      <div class="fc-ai-msg">On it — creating a MIDI track with a lush string pad layered with tabla at 92 BPM. Reverb tail set to 3.2s, routed to a send for width. Want me to add a sub-bass swell underneath?</div>
+      <div class="fc-actions">
+        <button class="fc-copy-btn" onclick="fcCopy(this)">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+          Copy
+        </button>
+        <button class="fc-exec-btn" onclick="fcExec(this)">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg>
+          (Demo) Mock Execution
+        </button>
+      </div>
+    </div>
+
+    <!-- Input row -->
+    <div class="fc-input-row">
+      <div class="fc-logo-icon">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="6.5" cy="6.5" r="2.2" fill="rgba(77,142,255,0.95)"/>
+          <circle cx="6.5" cy="6.5" r="5" stroke="rgba(77,142,255,0.38)" stroke-width="1"/>
+          <circle cx="6.5" cy="2"   r=".9" fill="rgba(77,142,255,0.65)"/>
+          <circle cx="6.5" cy="11"  r=".9" fill="rgba(77,142,255,0.65)"/>
+          <circle cx="2"   cy="6.5" r=".9" fill="rgba(77,142,255,0.65)"/>
+          <circle cx="11"  cy="6.5" r=".9" fill="rgba(77,142,255,0.65)"/>
+        </svg>
+      </div>
+      <input class="fc-query-input" id="floatChatInput"
+        placeholder="Ask anything about your session…">
+      <button class="fc-send-btn" id="floatSendBtn">↵</button>
+    </div>
+    <div id="floatHarnessStatus" style="font-size:10px;color:var(--text-tertiary);padding:0 14px 8px;"></div>
+
+    <!-- Toolbar -->
+    <div class="fc-toolbar">
+      <button class="fc-tool on" id="fBtnLive" onclick="fLive()" title="Live Ableton context">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><circle cx="6" cy="6" r="1.8" fill="currentColor"/></svg>
+        Live
+      </button>
+      <button class="fc-tool" id="fBtnAnalyze" onclick="fAnalyze()" title="Audio analyzer">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="1" y="7" width="2" height="4" rx=".8" fill="currentColor"/><rect x="4" y="4" width="2" height="7" rx=".8" fill="currentColor"/><rect x="7" y="5.5" width="2" height="5.5" rx=".8" fill="currentColor"/><rect x="10" y="2" width="2" height="9" rx=".8" fill="currentColor" opacity=".4"/></svg>
+        Analyze
+      </button>
+      <button class="fc-tool" id="fBtnVoice" onclick="fVoiceTool()" title="Voice input" style="position:relative">
+        <svg width="10" height="11" viewBox="0 0 10 12" fill="none"><rect x="3" y="1" width="4" height="6" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M1 7c0 2.2 1.8 4 4 4s4-1.8 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="11" x2="5" y2="12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Voice
+        <span class="fc-voice-ring"></span>
+      </button>
+      <div class="fc-tool-div"></div>
+      <button class="fc-tool" id="fBtnAutoExec" onclick="fAutoExec()" title="Auto-execute responses">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="2,1.5 9,5 2,8.5" fill="currentColor" opacity=".55"/></svg>
+        Auto Exec
+        <span class="fc-auto-dot"></span>
+      </button>
+      <div class="fc-spacer"></div>
+      <button class="fc-tool-right" id="fBtnSource" onclick="fToggleSrc()">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><polygon points="6,1 7.5,4.5 11,5 8.5,7.5 9,11 6,9.5 3,11 3.5,7.5 1,5 4.5,4.5" stroke="currentColor" stroke-width="1.1" fill="none" stroke-linejoin="round"/></svg>
+        <span id="fSrcLabel">Auto</span>
+        <span style="opacity:.4;font-size:9px;margin-left:1px">▾</span>
+      </button>
+    </div>
+
+    <!-- Source dropdown -->
+    <div class="fc-src-menu" id="fSrcDropdown">
+      <div class="fc-src-item sel" onclick="fPickSrc(this,'Auto')"><span style="flex:1">Auto</span><span class="fc-src-tick">✓</span></div>
+      <div class="fc-src-item" onclick="fPickSrc(this,'Source files')"><span style="flex:1">Source files</span><span class="fc-src-tick">✓</span></div>
+      <div class="fc-src-item" onclick="fPickSrc(this,'NotebookLM')"><span style="flex:1">NotebookLM</span><span class="fc-src-tick">✓</span></div>
+      <div class="fc-src-div"></div>
+      <div class="fc-src-item" onclick="fPickSrc(this,'Memory only')"><span style="flex:1">Memory only</span><span class="fc-src-tick">✓</span></div>
+      <div class="fc-src-item" onclick="fPickSrc(this,'No sources')"><span style="flex:1">No sources</span><span class="fc-src-tick">✓</span></div>
+    </div>
+
+  </div>
+
+  <div class="desktop-label">Conductor desktop preview</div>
+</div>
+
+<script>
+  let chatOpen = false;
+  let currentTab = 'session';
+
+  // Tasks tab toggles: click when active → go back to Session
+  function toggleTasksTab() {
+    if (currentTab === 'tasks') {
+      switchTab('session');
+    } else {
+      switchTab('tasks');
+    }
+  }
+
+  function switchTab(tab) {
+    closeAttachedChatForNavigation();
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    // Clear both class AND any inline display styles left by openSettings/closeSettings
+    document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = ''; });
+    document.getElementById('page-' + tab).classList.add('active');
+    document.getElementById('settingsPage').classList.remove('active');
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+    // show footer + session content only on session tab
+    const footer = document.getElementById('sessionFooter');
+    const sessionBody = document.querySelector('.session-body');
+    if (footer) footer.style.display = tab === 'session' ? 'block' : 'none';
+
+  }
+
+  function toggleChat() {
+    if (!floatOpen) {
+      openFloatChat();
+    } else if (floatHidden) {
+      showFloat();
+    } else {
+      closeFloatChat();
+    }
+  }
+
+  function closeAttachedChatForNavigation() {
+    if (typeof chatState !== 'undefined' && chatState === 'attached') {
+      closeChatFully();
+    }
+  }
+
+  function openSettings() {
+    closeAttachedChatForNavigation();
+    document.getElementById('settingsPage').classList.add('active');
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+    // hide entire main UI — tabs, pages
+    document.getElementById('topNav').style.display = 'none';
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  }
+
+  function closeSettings() {
+    document.getElementById('settingsPage').classList.remove('active');
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+    // restore main UI — use classes only, no inline styles
+    document.getElementById('topNav').style.display = 'flex';
+    document.querySelectorAll('.page').forEach(p => { p.style.display = ''; p.classList.remove('active'); });
+    document.getElementById('page-' + currentTab).classList.add('active');
+  }
+
+  function openIntegrations() {
+    showPanel();
+    document.getElementById('integrationsPage').classList.add('active');
+    document.getElementById('settingsPage').classList.remove('active');
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+  }
+
+  function closeIntegrations() {
+    showPanel();
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('settingsPage').classList.add('active');
+  }
+
+  function openShortcutsPage() {
+    showPanel();
+    document.getElementById('shortcutsPage').classList.add('active');
+    document.getElementById('settingsPage').classList.remove('active');
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+  }
+
+  function closeShortcutsPage() {
+    showPanel();
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('settingsPage').classList.add('active');
+  }
+
+  function openThemePage() {
+    showPanel();
+    document.getElementById('themePage').classList.add('active');
+    document.getElementById('settingsPage').classList.remove('active');
+    document.getElementById('integrationsPage').classList.remove('active');
+    document.getElementById('shortcutsPage').classList.remove('active');
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+  }
+
+  function closeThemePage() {
+    showPanel();
+    document.getElementById('themePage').classList.remove('active');
+    document.getElementById('settingsPage').classList.add('active');
+  }
+
+  function openThemeCustomizationPage() {
+    showPanel();
+    document.getElementById('themeCustomizationPage').classList.add('active');
+    document.getElementById('themePage').classList.remove('active');
+  }
+
+  function closeThemeCustomizationPage() {
+    showPanel();
+    document.getElementById('themeCustomizationPage').classList.remove('active');
+    document.getElementById('themePage').classList.add('active');
+  }
+
+  const themeDefaults = {
+    chatGlow: 100,
+    chatSize: 420,
+    chatAlpha: 4,
+    panelSize: 460,
+    panelAlpha: 2
+  };
+
+  function applyThemeSettings(settings) {
+    const root = document.documentElement;
+    const glow = Number(settings.chatGlow || themeDefaults.chatGlow) / 100;
+    const chatSize = Number(settings.chatSize || themeDefaults.chatSize);
+    let chatTransparency = Number(settings.chatAlpha ?? themeDefaults.chatAlpha);
+    const panelSize = Number(settings.panelSize || themeDefaults.panelSize);
+    let panelTransparency = Number(settings.panelAlpha ?? themeDefaults.panelAlpha);
+    // Earlier builds stored opacity values like 96/98. Convert those to transparency.
+    if (chatTransparency > 70) chatTransparency = 100 - chatTransparency;
+    if (panelTransparency > 70) panelTransparency = 100 - panelTransparency;
+    chatTransparency = Math.max(0, Math.min(55, chatTransparency));
+    panelTransparency = Math.max(0, Math.min(50, panelTransparency));
+    const chatOpacity = 1 - (chatTransparency / 100);
+    const panelOpacity = 1 - (panelTransparency / 100);
+
+    root.style.setProperty('--chat-window-width', chatSize + 'px');
+    root.style.setProperty('--chat-window-alpha', chatOpacity.toFixed(2));
+    root.style.setProperty('--panel-width', panelSize + 'px');
+    root.style.setProperty('--panel-alpha', panelOpacity.toFixed(2));
+    root.style.setProperty('--panel-chrome-alpha', Math.max(0.35, panelOpacity - 0.06).toFixed(2));
+    root.style.setProperty('--fc-glow-a0', (0.20 * glow).toFixed(3));
+    root.style.setProperty('--fc-glow-a1', (0.55 * glow).toFixed(3));
+    root.style.setProperty('--fc-glow-a2', (0.38 * glow).toFixed(3));
+    root.style.setProperty('--fc-glow-a3', (0.22 * glow).toFixed(3));
+    root.style.setProperty('--fc-glow-a4', (0.14 * glow).toFixed(3));
+
+    const setValue = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    const setRange = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
+    setRange('chatGlowRange', settings.chatGlow || themeDefaults.chatGlow);
+    setRange('chatSizeRange', chatSize);
+    setRange('chatAlphaRange', chatTransparency);
+    setRange('panelSizeRange', panelSize);
+    setRange('panelAlphaRange', panelTransparency);
+    setValue('chatGlowValue', Math.round((settings.chatGlow || themeDefaults.chatGlow)) + '%');
+    setValue('chatSizeValue', chatSize + 'px');
+    setValue('chatAlphaValue', Math.round(chatTransparency) + '%');
+    setValue('panelSizeValue', panelSize + 'px');
+    setValue('panelAlphaValue', Math.round(panelTransparency) + '%');
+  }
+
+  function updateThemeControl(key, value) {
+    const current = readThemeSettings();
+    current[key] = Number(value);
+    localStorage.setItem('conductor_theme', JSON.stringify(current));
+    applyThemeSettings({ ...themeDefaults, ...current });
+  }
+
+  function resetThemeDefaults() {
+    localStorage.removeItem('conductor_theme');
+    applyThemeSettings({ ...themeDefaults });
+    showToast('Appearance reset to defaults');
+  }
+
+  function readThemeSettings() {
+    try {
+      const raw = localStorage.getItem('conductor_theme');
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (err) {
+      localStorage.removeItem('conductor_theme');
+      return {};
+    }
+  }
+
+  applyThemeSettings({ ...themeDefaults, ...readThemeSettings() });
+
+  // Old prototype chat logic removed. Wired via app/harness.js
+
+  // ── ACTION BUTTONS ──
+  function copyMsg(btn) {
+    const text = btn.closest('.msg-wrap').querySelector('.msg').textContent;
+    navigator.clipboard.writeText(text).catch(()=>{});
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1800);
+  }
+
+  function executeInAbleton(btn) {
+    btn.classList.add('flashed');
+    btn.textContent = '✓ Demo Mock Executed';
+    showExecToast('✓ Demo Mock Execution');
+    setTimeout(() => { btn.classList.remove('flashed'); btn.textContent = '▶ (Demo) Mock Execution'; }, 2200);
+  }
+
+  function showExecToast(msg) {
+    let t = document.getElementById('execToast');
+    if (!t) { t = document.createElement('div'); t.id='execToast'; t.className='exec-toast'; document.body.appendChild(t); }
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── TOOLBAR ──
+  let liveActive = true, analyzeActive = false, voiceToolActive = false;
+
+  function toolbarLive() {
+    liveActive = !liveActive;
+    document.getElementById('btnLive').classList.toggle('active-live', liveActive);
+  }
+
+  function toolbarAnalyze() {
+    analyzeActive = !analyzeActive;
+    const btn = document.getElementById('btnAnalyze');
+    btn.classList.toggle('active-live', analyzeActive);
+    document.getElementById('chatInput').placeholder = analyzeActive ? 'Analyzing audio…' : (voiceToolActive ? 'Listening… speak now' : 'Ask Conductor...');
+  }
+
+  function toolbarVoice() {
+    voiceToolActive = !voiceToolActive;
+    const btn = document.getElementById('btnVoiceTool');
+    btn.classList.toggle('active-voice', voiceToolActive);
+    document.getElementById('chatInput').placeholder = voiceToolActive ? 'Listening… speak now' : 'Ask Conductor...';
+    setNotchState(voiceToolActive ? 'listening' : 'default');
+    // also sync top voice btn if exists
+    const topVoice = document.getElementById('voiceBtn');
+    if (topVoice) { topVoice.style.borderColor = voiceToolActive ? '#FF8C3A' : ''; topVoice.style.color = voiceToolActive ? '#FF8C3A' : ''; }
+  }
+
+  let autoExecActive = false;
+
+  function toolbarAutoExec() {
+    autoExecActive = !autoExecActive;
+    const btn = document.getElementById('btnAutoExec');
+    btn.classList.toggle('auto-exec-on', autoExecActive);
+    btn.childNodes[0].textContent = autoExecActive ? 'Auto Execute ' : 'Auto Execute ';
+    showToast(autoExecActive ? 'Auto Execute ON — responses will run in Ableton automatically' : 'Auto Execute OFF');
+  }
+
+  function toggleSourceDropdown() {
+    document.getElementById('sourceDropdown').classList.toggle('open');
+  }
+
+  function selectSource(el, label) {
+    document.querySelectorAll('.source-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('btnSource').textContent = label + ' ▾';
+    document.getElementById('sourceDropdown').classList.remove('open');
+  }
+
+  // close all source dropdowns on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.source-btn') && !e.target.closest('.fc-tool-right')) {
+      const dd = document.getElementById('sourceDropdown');
+      if (dd) dd.classList.remove('open');
+      const fd = document.getElementById('fSrcDropdown');
+      if (fd) fd.classList.remove('open');
+    }
+  });
+
+  // ── GLOBAL SHORTCUT: ⌃ + ⌘ → Voice activation ──────────
+  let ctrlCmdVoiceActive = false;
+  function setShortcutVoiceVisual(active) {
+    const notch = document.getElementById('notch');
+    const zone = document.getElementById('notchZone');
+    if (!notch || !zone) return;
+    notch.classList.toggle('shortcut-voice', active);
+    zone.classList.toggle('shortcut-voice', active);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    // ⌃⌘ held — activate voice
+    if (e.ctrlKey && e.metaKey && !ctrlCmdVoiceActive) {
+      ctrlCmdVoiceActive = true;
+      setShortcutVoiceVisual(true);
+      // open chat if not open
+      if (!chatOpen) toggleChat();
+      // activate voice
+      voiceToolActive = true;
+      const btn = document.getElementById('btnVoiceTool');
+      if (btn) btn.classList.add('active-voice');
+      document.getElementById('chatInput').placeholder = 'Listening… speak now';
+      setNotchState('listening');
+      const topVoice = document.getElementById('voiceBtn');
+      if (topVoice) { topVoice.style.borderColor='#FF8C3A'; topVoice.style.color='#FF8C3A'; }
+      showToast('Voice activated — speak now');
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    // released ⌃ or ⌘ → deactivate voice
+    if (ctrlCmdVoiceActive && (!e.ctrlKey || !e.metaKey)) {
+      ctrlCmdVoiceActive = false;
+      setShortcutVoiceVisual(false);
+      voiceToolActive = false;
+      const btn = document.getElementById('btnVoiceTool');
+      if (btn) btn.classList.remove('active-voice');
+      document.getElementById('chatInput').placeholder = 'Ask Conductor...';
+      setNotchState('default');
+      const topVoice = document.getElementById('voiceBtn');
+      if (topVoice) { topVoice.style.borderColor=''; topVoice.style.color=''; }
+    }
+  });
+
+
+
+  // ══ FLOATING CHAT STATE ══════════════════════════════════
+  // chatState: 'closed' | 'attached' (below notch) | 'detached' (free float)
+  let chatState = 'closed';
+  let chatHidden = false;      // ⌃-hide, only when detached
+  let detachedX = null, detachedY = null;
+  let chatDraggedOnce = false, chatTipTimer = null;
+  let fLiveOn = true, fAnalyzeOn = false, fVoiceOn = false, fAutoExecOn = false;
+  const floatGlowColors = [
+    { rgb: '102,153,255', border: 'rgba(102,153,255,0.68)' },
+    { rgb: '117,231,190', border: 'rgba(117,231,190,0.58)' },
+    { rgb: '186,147,255', border: 'rgba(186,147,255,0.58)' },
+    { rgb: '255,178,112', border: 'rgba(255,178,112,0.52)' },
+    { rgb: '117,211,255', border: 'rgba(117,211,255,0.58)' }
+  ];
+  let floatGlowIndex = 0;
+
+  // Backwards-compat aliases used by keydown/keyup handlers below
+  Object.defineProperty(window, 'floatOpen',   { get: () => chatState !== 'closed' });
+  Object.defineProperty(window, 'floatHidden', { get: () => chatHidden });
+
+  function _fcEl()    { return document.getElementById('floatChat'); }
+  function _fcAttachToPanel() {
+    const el = _fcEl();
+    const panel = document.getElementById('panel');
+    if (el.parentElement !== panel) panel.appendChild(el);
+  }
+  function _fcAttachToDesktop() {
+    const el = _fcEl();
+    const desktop = document.getElementById('desktop');
+    if (el.parentElement !== desktop) desktop.appendChild(el);
+  }
+  function _fcPanelY() {
+    const panelWrap = document.getElementById('panelWrap');
+    const notch = document.getElementById('notch');
+    const panelVisible = panelWrap.classList.contains('visible');
+    return panelVisible ? panelWrap.getBoundingClientRect().bottom : notch.getBoundingClientRect().bottom;
+  }
+
+  function _fcAttachedTop() {
+    return Math.round(_fcPanelY() - 1);
+  }
+
+  function pulseFloatGlow(kind = 'show') {
+    const el = _fcEl();
+    const color = floatGlowColors[floatGlowIndex % floatGlowColors.length];
+    floatGlowIndex += 1;
+    el.style.setProperty('--fc-glow-rgb', color.rgb);
+    el.style.setProperty('--fc-glow-border', color.border);
+    const cls = kind === 'hide' ? 'fc-hide-glow' : 'fc-glow-pulse';
+    el.classList.remove('fc-glow-pulse', 'fc-hide-glow');
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), kind === 'hide' ? 260 : 540);
+  }
+
+  // ── Open attached (default — chat extends below notch) ──
+  function openChatAttached() {
+    chatState = 'attached';
+    chatHidden = false;
+    chatOpen = true;
+    const el = _fcEl();
+    _fcAttachToPanel();
+    el.style.left = '';
+    el.style.top = '';
+    el.style.width = '';
+    el.style.transform = '';
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
+    el.classList.remove('fc-detached', 'fc-closing');
+    el.classList.add('fc-attached');
+    setTimeout(() => {
+      const m = document.getElementById('floatMessages');
+      if (m) m.scrollTop = m.scrollHeight;
+    }, 300);
+    const sd = document.getElementById('statusDot');
+    if (sd) sd.classList.add('pulsing');
+    const hint = document.getElementById('shortcutHint');
+    if (hint) { hint.style.maxHeight='0'; hint.style.opacity='0'; hint.style.overflow='hidden'; hint.classList.add('collapsed'); }
+    const footer = document.getElementById('sessionFooter');
+    if (footer) footer.style.display = 'none';
+  }
+
+  // ── Detach smoothly (called when drag threshold exceeded) ──
+  function _detachChat(e) {
+    const el = _fcEl();
+    const rect = el.getBoundingClientRect();
+    _fcAttachToDesktop();
+    // Capture pixel position before switching away from CSS centering
+    detachedX = rect.left;
+    detachedY = rect.top;
+    chatState = 'detached';
+    el.style.width     = 'var(--chat-window-width)';
+    el.style.left      = detachedX + 'px';
+    el.style.top       = detachedY + 'px';
+    el.style.transform = 'none';
+    el.style.transition = 'none';
+    el.classList.remove('fc-attached', 'fc-closing');
+    el.classList.add('fc-detached', 'fc-pulling-out');
+    requestAnimationFrame(() => {
+      el.style.transition = '';
+      if (e) {
+        detachedX = Math.max(0, Math.min(e.clientX - fOffX, window.innerWidth - el.offsetWidth));
+        detachedY = Math.max(0, Math.min(e.clientY - fOffY, window.innerHeight - el.offsetHeight));
+        el.style.left = detachedX + 'px';
+        el.style.top  = detachedY + 'px';
+      }
+    });
+    setTimeout(() => {
+      el.classList.remove('fc-pulling-out');
+      el.style.transform = 'none';
+    }, 280);
+    // Show drag tip once
+    if (!chatDraggedOnce) {
+      chatDraggedOnce = true;
+      const tip = document.getElementById('floatTip');
+      if (tip) {
+        tip.classList.remove('tip-out');
+        clearTimeout(chatTipTimer);
+        chatTipTimer = setTimeout(() => tip.classList.add('tip-out'), 4000);
+      }
+    }
+  }
+
+  // ── × clicked on detached → animate back to notch ──
+  function reattachChat() {
+    if (chatState !== 'detached') return;
+    const el = _fcEl();
+    const panel = document.getElementById('panel');
+    const panelRect = panel.getBoundingClientRect();
+    const targetX = Math.round(panelRect.left);
+    const targetY = _fcAttachedTop();
+    const targetW = Math.round(panelRect.width);
+    // Animate into the exact integrated panel geometry before reparenting.
+    el.classList.remove('fc-pulling-out');
+    el.classList.add('fc-docking');
+    el.style.transition = '';
+    el.style.left = targetX + 'px';
+    el.style.top  = targetY + 'px';
+    el.style.width = targetW + 'px';
+    setTimeout(() => {
+      el.style.transition = 'none';
+      chatState = 'attached';
+      chatHidden = false;
+      _fcAttachToPanel();
+      el.style.left      = '';     // hand centering back to CSS (left:50%)
+      el.style.transform = '';     // hand centering back to CSS (translateX(-50%))
+      el.style.top       = '';
+      el.style.width     = '';
+      el.classList.remove('fc-detached', 'fc-docking');
+      el.classList.add('fc-attached');
+      requestAnimationFrame(() => { el.style.transition = ''; });
+    }, 305);
+  }
+
+  // ── × clicked on detached → disappear from current position ──
+  function closeDetachedChat() {
+    if (chatState !== 'detached') return;
+    const el = _fcEl();
+    const rect = el.getBoundingClientRect();
+    chatState = 'closed';
+    chatHidden = false;
+    chatOpen = false;
+    detachedX = null; detachedY = null;
+    el.style.transition = 'none';
+    el.style.left = Math.round(rect.left) + 'px';
+    el.style.top = Math.round(rect.top) + 'px';
+    el.style.width = Math.round(rect.width) + 'px';
+    el.style.transform = 'none';
+    el.classList.remove('fc-pulling-out', 'fc-docking');
+    el.classList.add('fc-exiting');
+    requestAnimationFrame(() => { el.style.transition = ''; });
+    setTimeout(() => {
+      el.classList.remove('fc-detached', 'fc-exiting');
+      el.style.left = '';
+      el.style.top = '';
+      el.style.width = '';
+      el.style.transform = '';
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+      el.style.filter = '';
+      el.style.clipPath = '';
+      el.style.transition = '';
+    }, 320);
+  }
+
+  // ── Close chat entirely (chat toggle button when attached) ──
+  function closeChatFully() {
+    chatState = 'closed';
+    chatHidden = false;
+    detachedX = null; detachedY = null;
+    chatOpen = false;
+    const el = _fcEl();
+    el.classList.remove('fc-attached', 'fc-detached');
+    el.classList.add('fc-closing');
+    _fcAttachToDesktop();
+    el.style.left = ''; el.style.transform = ''; el.style.opacity = ''; el.style.pointerEvents = '';
+    setTimeout(() => el.classList.remove('fc-closing'), 320);
+    const sd = document.getElementById('statusDot');
+    if (sd) sd.classList.remove('pulsing');
+    const hint = document.getElementById('shortcutHint');
+    if (hint) { hint.style.maxHeight='200px'; hint.style.opacity='1'; hint.classList.remove('collapsed'); }
+    const footer = document.getElementById('sessionFooter');
+    if (currentTab === 'session' && footer) footer.style.display = 'block';
+  }
+
+  // ── ⌃-hide / show (detached only) ──
+  function hideChatFloat() {
+    if (chatState !== 'detached') return;
+    chatHidden = true;
+    const el = _fcEl();
+    pulseFloatGlow('hide');
+    el.style.transition = 'opacity 145ms ease, transform 160ms cubic-bezier(0.4,0,0.2,1), filter 145ms ease';
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    el.style.transform = 'translateY(-3px) scale(0.982)';
+    el.style.filter = 'blur(1.5px)';
+    setTimeout(() => el.style.transition = '', 170);
+  }
+  function showChatFloat() {
+    if (chatState !== 'detached') return;
+    chatHidden = false;
+    const el = _fcEl();
+    el.style.transition = 'opacity 175ms ease, transform 190ms cubic-bezier(0.16,1,0.3,1), filter 175ms ease';
+    el.style.opacity = '1';
+    el.style.pointerEvents = 'auto';
+    el.style.transform = 'none';
+    el.style.filter = 'none';
+    pulseFloatGlow('show');
+    setTimeout(() => el.style.transition = '', 200);
+  }
+
+  // ── Chat toggle button in notch bar ──
+  function toggleChat() {
+    if (chatState === 'closed') {
+      openChatAttached();
+    } else if (chatState === 'attached') {
+      closeChatFully();
+    } else { // detached
+      if (chatHidden) showChatFloat(); else hideChatFloat();
+    }
+  }
+
+  // Backwards compat
+  function openFloatChat()  { openChatAttached(); }
+  function closeFloatChat() { closeChatFully(); }
+  function hideFloat()      { hideChatFloat(); }
+  function showFloat()      { showChatFloat(); }
+
+  // ── DRAG LOGIC ──────────────────────────────────────────
+  let fDragging = false, fOffX = 0, fOffY = 0;
+  let fDragStartX = 0, fDragStartY = 0, fDetachTriggered = false;
+  const DETACH_PX = 7; // pixels of movement before detach kicks in
+
+  document.getElementById('floatHeader').addEventListener('mousedown', (e) => {
+    if (e.target.closest('.fc-x-btn')) return;
+    fDragging = true;
+    fDetachTriggered = false;
+    const rect = _fcEl().getBoundingClientRect();
+    fOffX = e.clientX - rect.left;
+    fOffY = e.clientY - rect.top;
+    fDragStartX = e.clientX;
+    fDragStartY = e.clientY;
+    document.getElementById('floatHeader').classList.add('dragging');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!fDragging) return;
+    const dx = e.clientX - fDragStartX;
+    const dy = e.clientY - fDragStartY;
+    if (chatState === 'attached' && !fDetachTriggered) {
+      if (Math.hypot(dx, dy) > DETACH_PX) {
+        fDetachTriggered = true;
+        _detachChat(e);
+      } else { return; }
+    }
+    if (chatState === 'detached') {
+      const el = _fcEl();
+      detachedX = Math.max(0, Math.min(e.clientX - fOffX, window.innerWidth  - el.offsetWidth));
+      detachedY = Math.max(0, Math.min(e.clientY - fOffY, window.innerHeight - el.offsetHeight));
+      el.style.left = detachedX + 'px';
+      el.style.top  = detachedY + 'px';
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (fDragging) {
+      fDragging = false;
+      fDetachTriggered = false;
+      document.getElementById('floatHeader').classList.remove('dragging');
+    }
+  });
+
+  // ── FLOAT CHAT MESSAGING ────────────────────────────────
+  function sendFloatMsg() {
+    const input = document.getElementById('floatChatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const msgs = document.getElementById('floatMessages');
+    const u = document.createElement('div');
+    u.className = 'fc-user-msg'; u.textContent = text;
+    msgs.appendChild(u);
+    input.value = '';
+    msgs.scrollTop = msgs.scrollHeight;
+    setNotchState('thinking');
+    setTimeout(() => {
+      const a = document.createElement('div');
+      a.className = 'fc-ai-msg';
+      a.textContent = 'Demo / Mock Mode preview. No backend was called.';
+      const act = document.createElement('div');
+      act.className = 'fc-actions';
+      act.innerHTML = `<button class="fc-copy-btn" onclick="fcCopy(this)"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg> Copy</button><button class="fc-exec-btn" onclick="fcExec(this)"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg> (Demo) Mock Execution</button>`;
+      msgs.appendChild(a); msgs.appendChild(act);
+      msgs.scrollTop = msgs.scrollHeight;
+      setNotchState('default');
+      if (fAutoExecOn) setTimeout(() => showExecToast('Demo Mock Execution'), 200);
+    }, 1800);
+  }
+
+  function handleFloatKey(e) { if (e.key === 'Enter') sendFloatMsg(); }
+
+  function fcCopy(btn) {
+    const prev = btn.closest('.fc-actions').previousElementSibling;
+    navigator.clipboard.writeText(prev ? prev.textContent : '').catch(()=>{});
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg> Copy', 1800);
+  }
+
+  function fcExec(btn) {
+    btn.classList.add('flashed');
+    btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg> Demo Mock Executed';
+    showExecToast('Demo Mock Execution');
+    setTimeout(() => {
+      btn.classList.remove('flashed');
+      btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg> (Demo) Mock Execution';
+    }, 2200);
+  }
+
+  // ── FLOAT TOOLBAR ────────────────────────────────────────
+  function fLive() {
+    fLiveOn = !fLiveOn;
+    document.getElementById('fBtnLive').classList.toggle('on', fLiveOn);
+  }
+  function fAnalyze() {
+    fAnalyzeOn = !fAnalyzeOn;
+    document.getElementById('fBtnAnalyze').classList.toggle('on', fAnalyzeOn);
+    document.getElementById('floatChatInput').placeholder = fAnalyzeOn ? 'Analyzing audio…' : 'Ask anything about your session…';
+  }
+  function fVoiceTool() {
+    fVoiceOn = !fVoiceOn;
+    document.getElementById('fBtnVoice').classList.toggle('voice-on', fVoiceOn);
+    document.getElementById('floatChatInput').placeholder = fVoiceOn ? 'Listening… speak now' : 'Ask anything about your session…';
+    setNotchState(fVoiceOn ? 'listening' : 'default');
+  }
+  function fAutoExec() {
+    fAutoExecOn = !fAutoExecOn;
+    document.getElementById('fBtnAutoExec').classList.toggle('auto-on', fAutoExecOn);
+    showToast(fAutoExecOn ? 'Auto Execute ON' : 'Auto Execute OFF');
+  }
+  function fToggleSrc() {
+    document.getElementById('fSrcDropdown').classList.toggle('open');
+  }
+  function fPickSrc(el, label) {
+    document.querySelectorAll('#fSrcDropdown .fc-src-item').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    document.getElementById('fSrcLabel').textContent = label;
+    document.getElementById('fSrcDropdown').classList.remove('open');
+  }
+
+  const panelWrap = document.getElementById('panelWrap');
+  const notchZone = document.getElementById('notchZone');
+  const panel = document.getElementById('panel');
+  const desktop = document.getElementById('desktop');
+  // ── NOTCH STATES ─────────────────────────────
+  let notchState = 'default'; // default | listening | thinking
+  let voiceActive = false;
+
+  function setNotchState(state) {
+    const notch = document.getElementById('notch');
+    const listening = document.getElementById('notchListening');
+    const thinking = document.getElementById('notchThinking');
+
+    notch.classList.remove('listening', 'thinking');
+    listening.classList.remove('active');
+    thinking.classList.remove('active');
+
+    notchState = state;
+
+    if (state === 'listening') {
+      notch.classList.add('listening');
+      listening.classList.add('active');
+    } else if (state === 'thinking') {
+      notch.classList.add('thinking');
+      thinking.classList.add('active');
+    }
+  }
+
+  function toggleVoice() {
+    voiceActive = !voiceActive;
+    const btn = document.getElementById('voiceBtn');
+    if (voiceActive) {
+      btn.style.borderColor = '#FF8C3A';
+      btn.style.color = '#FF8C3A';
+      setNotchState('listening');
+    } else {
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      setNotchState('default');
+    }
+  }
+
+  let pinned = false;
+
+  function togglePin() {
+    pinned = !pinned;
+    const btn = document.getElementById('pinBtn');
+    if (pinned) {
+      btn.classList.add('pinned');
+      btn.textContent = 'Pinned';
+      showPanel();
+    } else {
+      btn.classList.remove('pinned');
+      btn.textContent = 'Keep Open';
+    }
+  }
+
+  let hideTimer = null;
+
+  function showPanel() {
+    if (hideTimer) clearTimeout(hideTimer);
+    panelWrap.classList.add('visible');
+    panelWrap.classList.remove('hidden-state');
+    // If attached chat was hidden with the panel, restore it
+    if (chatState === 'attached') {
+      const el = _fcEl();
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  }
+
+  function scheduleHidePanel() {
+    if (pinned) return;
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      panelWrap.classList.remove('visible');
+      panelWrap.classList.add('hidden-state');
+
+      // Hide attached chat along with panel
+      if (chatState === 'attached') {
+        const el = _fcEl();
+        el.style.transition = 'clip-path 340ms cubic-bezier(0.4,0,0.2,1), opacity 240ms ease, transform 340ms cubic-bezier(0.4,0,0.2,1)';
+        el.style.clipPath = 'inset(0 calc(50% - 60px) calc(100% - 32px) calc(50% - 60px) round 16px)';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(0)';
+        el.style.pointerEvents = 'none';
+        setTimeout(() => {
+          if (chatState === 'attached') {
+            el.style.transition = '';
+            el.style.clipPath = '';
+            el.style.transform = '';
+          }
+        }, 320);
+      }
+
+      // Reset Tasks → Session on hide
+      if (currentTab === 'tasks') switchTab('session');
+
+      // Reset Settings/Integrations/Shortcuts → Session on hide
+      const settingsOpen = document.getElementById('settingsPage').classList.contains('active');
+      const integrationsOpen = document.getElementById('integrationsPage').classList.contains('active');
+      const shortcutsOpen = document.getElementById('shortcutsPage').classList.contains('active');
+      const themeOpen = document.getElementById('themePage').classList.contains('active');
+      const themeCustomizationOpen = document.getElementById('themeCustomizationPage').classList.contains('active');
+      if (settingsOpen || integrationsOpen || shortcutsOpen || themeOpen || themeCustomizationOpen) closeSettings();
+    }, 280);
+  }
+
+  notchZone.addEventListener('mouseenter', showPanel);
+  panel.addEventListener('mouseenter', showPanel);
+  notchZone.addEventListener('mouseleave', scheduleHidePanel);
+  panel.addEventListener('mouseleave', scheduleHidePanel);
+
+  // Attached chat is part of the notch hover zone
+  _fcEl().addEventListener('mouseenter', () => {
+    if (chatState === 'attached') showPanel();
+  });
+  _fcEl().addEventListener('mouseleave', () => {
+    if (chatState === 'attached') scheduleHidePanel();
+  });
+
+  // ── RENAME SESSION TAB ───────────────────────
+  function renameSession(tabEl) {
+    // prevent tab switch on dblclick
+    tabEl.onclick = null;
+    const nameEl = document.getElementById('sessionName');
+    const original = nameEl.textContent;
+    nameEl.setAttribute('contenteditable', 'true');
+    nameEl.focus();
+    const range = document.createRange();
+    range.selectNodeContents(nameEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    function finish() {
+      const newName = nameEl.textContent.trim() || original;
+      nameEl.textContent = newName;
+      nameEl.removeAttribute('contenteditable');
+      nameEl.removeEventListener('keydown', keyHandler);
+      nameEl.removeEventListener('blur', blurHandler);
+      // restore tab click
+      tabEl.onclick = () => switchTab('session');
+      // persist
+      const config = JSON.parse(localStorage.getItem('conductor_config') || '{}');
+      config.sessionName = newName;
+      localStorage.setItem('conductor_config', JSON.stringify(config));
+      showToast('Session renamed to "' + newName + '"');
+    }
+
+    function keyHandler(e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Escape') { nameEl.textContent = original; finish(); }
+    }
+    function blurHandler() { finish(); }
+
+    nameEl.addEventListener('keydown', keyHandler);
+    nameEl.addEventListener('blur', blurHandler);
+  }
+
+  // ── RENAME TASK ──────────────────────────────
+  let activeRenameEl = null;
+
+  function renameTask(el) {
+    if (activeRenameEl && activeRenameEl !== el) finishRename(activeRenameEl);
+    activeRenameEl = el;
+    el.setAttribute('contenteditable', 'true');
+    el.focus();
+    // select all text
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    el.addEventListener('keydown', onRenameKey);
+    el.addEventListener('blur', onRenameBlur);
+  }
+
+  function onRenameKey(e) {
+    if (e.key === 'Enter') { e.preventDefault(); finishRename(e.target); }
+    if (e.key === 'Escape') { e.target.textContent = e.target.dataset.original || e.target.textContent; finishRename(e.target); }
+  }
+
+  function onRenameBlur(e) { finishRename(e.target); }
+
+  function finishRename(el) {
+    const newName = el.textContent.trim() || 'Untitled Session';
+    el.textContent = newName;
+    el.removeAttribute('contenteditable');
+    el.removeEventListener('keydown', onRenameKey);
+    el.removeEventListener('blur', onRenameBlur);
+    activeRenameEl = null;
+    // save to localStorage
+    const config = JSON.parse(localStorage.getItem('conductor_config') || '{}');
+    if (!config.sessions) config.sessions = {};
+    config.sessions[el.dataset.id || newName] = newName;
+    localStorage.setItem('conductor_config', JSON.stringify(config));
+    showToast('Renamed to "' + newName + '"');
+  }
+
+  function showToast(msg) {
+    let toast = document.getElementById('renameToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'renameToast';
+      toast.className = 'rename-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  // ── DOUBLE ⌃⌃ → open chat  |  SINGLE ⌃ → hide/show detached float ──
+  let lastCtrlTime = 0;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Control' && !e.metaKey) {
+      const now = Date.now();
+      if (now - lastCtrlTime < 400) {
+        lastCtrlTime = 0;
+        // Double-tap: open chat from closed. Detached hide/show is handled on keyup.
+        if (chatState === 'closed') { showPanel(); openChatAttached(); }
+      } else {
+        lastCtrlTime = now;
+      }
+    }
+  });
+
+  document.addEventListener('keyup', (e) => {
+    // Hide/show detached float only. Default is single ⌃ Control.
+    if (!ctrlCmdVoiceActive && chatState === 'detached' && matchesShortcut(e, 'hide')) {
+      if (chatHidden) { showChatFloat(); } else { hideChatFloat(); }
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    const rect = notchZone.getBoundingClientRect();
+    const withinX = e.clientX >= rect.left && e.clientX <= rect.right;
+    const withinY = e.clientY >= 0 && e.clientY <= 60;
+    if (withinX && withinY) {
+      showPanel();
+    }
+  });
+
+  // ── INLINE SHORTCUT RECORDER ─────────────────────────
+  const KEY_LABELS = {
+    Control:'⌃ Control', Meta:'⌘ Command', Alt:'⌥ Option', Shift:'⇧ Shift'
+  };
+  const SHORTCUT_DEFAULTS = {
+    chat: ['⌃ Control', '⌃ Control'],
+    hide: ['⌃ Control'],
+    voice: ['⌃ Control', '⌘ Command']
+  };
+  let shortcutConfig = readShortcutConfig();
+  let activeRecorder = null;
+  let inlineKeys = [];
+
+  function readShortcutConfig() {
+    try {
+      const raw = localStorage.getItem('conductor_shortcuts');
+      if (!raw) return { ...SHORTCUT_DEFAULTS };
+      return { ...SHORTCUT_DEFAULTS, ...JSON.parse(raw) };
+    } catch (err) {
+      localStorage.removeItem('conductor_shortcuts');
+      return { ...SHORTCUT_DEFAULTS };
+    }
+  }
+
+  function renderShortcutDisplay(target) {
+    const display = document.getElementById(target + 'ShortcutDisplay');
+    const keys = shortcutConfig[target] || SHORTCUT_DEFAULTS[target];
+    if (!display || !keys) return;
+    display.innerHTML = keys.map((k,i) =>
+      `<span class="kbd">${k}</span>${i < keys.length-1 ? '<span class="kbd-sep">+</span>' : ''}`
+    ).join('');
+  }
+
+  function eventLabel(e) {
+    return KEY_LABELS[e.key] || (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+  }
+
+  function matchesShortcut(e, target) {
+    const keys = shortcutConfig[target] || SHORTCUT_DEFAULTS[target];
+    return keys && keys.length === 1 && eventLabel(e) === keys[0];
+  }
+
+  ['chat', 'hide', 'voice'].forEach(renderShortcutDisplay);
+
+  function startInlineRecord(target) {
+    // close any other open recorder
+    if (activeRecorder && activeRecorder !== target) cancelInlineRecord(activeRecorder);
+    activeRecorder = target;
+    inlineKeys = [];
+
+    const recorder = document.getElementById(target + 'Recorder');
+    const editBtn = document.getElementById(target + 'EditBtn');
+    const display = document.getElementById(target + 'ShortcutDisplay');
+    const card = recorder.closest('.shortcut-card');
+
+    display.innerHTML = '<span class="shortcut-capture">Press the modifiers you want</span>';
+    editBtn.textContent = 'Cancel';
+    editBtn.onclick = () => cancelInlineRecord(target);
+
+    if (card) card.classList.add('recording');
+
+    document.addEventListener('keydown', onInlineKey);
+    document.addEventListener('keyup', onInlineKeyUp);
+  }
+
+  function onInlineKey(e) {
+    if (!activeRecorder) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const label = eventLabel(e);
+    if (!inlineKeys.includes(label)) inlineKeys.push(label);
+    renderInlineKeys();
+  }
+
+  function onInlineKeyUp(e) {
+    if (!activeRecorder) return;
+    const minKeys = activeRecorder === 'hide' ? 1 : 2;
+    if (inlineKeys.length < minKeys) return;
+    // auto-save when 2+ keys recorded and released
+    saveInlineShortcut();
+  }
+
+  function renderInlineKeys() {
+    const display = document.getElementById(activeRecorder + 'ShortcutDisplay');
+    if (!display) return;
+    display.innerHTML = inlineKeys.length === 0
+      ? '<span class="shortcut-capture">Press the modifiers you want</span>'
+      : inlineKeys.map((k,i) =>
+          `<span class="kbd">${k}</span>${i < inlineKeys.length-1 ? '<span class="kbd-sep">+</span>' : ''}`
+        ).join('');
+  }
+
+  function saveInlineShortcut() {
+    const target = activeRecorder;
+    const display = document.getElementById(target + 'ShortcutDisplay');
+    shortcutConfig[target] = [...inlineKeys];
+    localStorage.setItem('conductor_shortcuts', JSON.stringify(shortcutConfig));
+    renderShortcutDisplay(target);
+    const editBtn = document.getElementById(target + 'EditBtn');
+    editBtn.textContent = 'Change';
+    editBtn.onclick = () => startInlineRecord(target);
+    const recorder = document.getElementById(target + 'Recorder');
+    const card = recorder.closest('.shortcut-card');
+    if (card) card.classList.remove('recording');
+    document.removeEventListener('keydown', onInlineKey);
+    document.removeEventListener('keyup', onInlineKeyUp);
+    activeRecorder = null;
+    inlineKeys = [];
+    showToast('Shortcut saved');
+  }
+
+  function cancelInlineRecord(target) {
+    const recorder = document.getElementById(target + 'Recorder');
+    const card = recorder.closest('.shortcut-card');
+    if (card) card.classList.remove('recording');
+    const editBtn = document.getElementById(target + 'EditBtn');
+    editBtn.textContent = 'Change';
+    editBtn.onclick = () => startInlineRecord(target);
+    // restore previous display if it was cleared
+    const display = document.getElementById(target + 'ShortcutDisplay');
+    if (display.innerHTML.includes('shortcut-capture')) {
+      renderShortcutDisplay(target);
+    }
+    document.removeEventListener('keydown', onInlineKey);
+    document.removeEventListener('keyup', onInlineKeyUp);
+    activeRecorder = null;
+    inlineKeys = [];
+  }
+</script>
+<style>
+/* Live Harness v1 Added Styles */
+.action-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 150ms;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.action-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.action-btn .group {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  width: 80px;
+}
+.timeline-item-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; color: var(--text-primary); }
+.timeline-item-body { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.hidden { display: none !important; }
+</style>
+<script src="harness.js"></script>
+</body>
+<!-- v6 -->
+</html>

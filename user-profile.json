@@ -1,0 +1,12 @@
+{
+  "onboarding_complete": false,
+  "genre": null,
+  "mood": null,
+  "stage": null,
+  "reference_artists": [],
+  "tools": {
+    "ableton": false,
+    "notebooklm": false,
+    "audio_analyzer": false
+  }
+}

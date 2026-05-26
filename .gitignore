@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+tmp/harness_sessions/
+logs/harness_sandbox/
+*.pyo
+.DS_Store
+.token-savior-cache.json
+memory/chromadb/
+memory/action_log.jsonl
+memory/action_proof_log.jsonl
+memory/feedback_log.jsonl
+memory/context_pack_log.jsonl
+memory/undo_log.jsonl

@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "version": "1.2",
+    "description": "Known plugin database for Conductor plugin scanner and risk taxonomy.",
+    "maintainer": "Conductor team — add new plugins as they are encountered",
+    "schema_notes": [
+      "aliases         — CamelCase VST filename fragments used by the plugin scanner",
+      "natural_names   — lowercase terms a user might type in natural language (used by context_pack_builder + risk taxonomy)",
+      "card_file       — operator card markdown filename in conductor-vault/plugins/  (set only when has_card=true)",
+      "risk            — low | medium | high  (high = always RISKY_WRITE on any param change)"
+    ]
+  },
+
+  "plugins": [
+
+    {"name": "Pro-Q 3",          "aliases": ["FabFilterProQ3","ProQ3"],          "natural_names": ["pro-q 3","proq3","pro q 3"],                    "manufacturer": "FabFilter",         "type": "eq",          "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Pro-Q 4",          "aliases": ["FabFilterProQ4","ProQ4"],          "natural_names": ["pro-q 4","proq4","pro q 4","pro-q4","fabfilter pro-q","fabfilter eq"], "manufacturer": "FabFilter", "type": "eq", "risk": "medium", "has_card": true,  "card_file": "Pro-Q 4 Operator Card.md"},
+    {"name": "Pro-MB",           "aliases": ["FabFilterProMB","ProMB"],          "natural_names": ["pro-mb","promB","fabfilter multiband"],            "manufacturer": "FabFilter",         "type": "multiband",   "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "TDR Nova",         "aliases": ["TDRNova"],                         "natural_names": ["tdr nova","tdrnova"],                              "manufacturer": "Tokyo Dawn",        "type": "eq",          "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "TDR SlickEQ",      "aliases": ["TDRSlickEQ"],                      "natural_names": ["tdr slickeq","slickeq"],                           "manufacturer": "Tokyo Dawn",        "type": "eq",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Kirchhoff-EQ",     "aliases": ["KirchhoffEQ"],                     "natural_names": ["kirchhoff","kirchhoff-eq","kirchhoffeq"],           "manufacturer": "Three-Body",        "type": "eq",          "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Neutron 5",        "aliases": ["Neutron5","iZotopeNeutron5"],      "natural_names": ["neutron 5","neutron5","izotope neutron"],           "manufacturer": "iZotope",           "type": "eq",          "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Neutron 4",        "aliases": ["Neutron4"],                        "natural_names": ["neutron 4","neutron4"],                             "manufacturer": "iZotope",           "type": "eq",          "risk": "medium", "has_card": false, "card_file": ""},
+
+    {"name": "Pro-C 2",          "aliases": ["FabFilterProC2","ProC2"],          "natural_names": ["pro-c 2","proc2","fabfilter compressor"],           "manufacturer": "FabFilter",         "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "API 2500",         "aliases": ["API2500"],                         "natural_names": ["api 2500","api2500"],                               "manufacturer": "UAD",               "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "1176 Classic",     "aliases": ["1176Classic","UAD1176"],           "natural_names": ["1176","uad 1176","1176 classic"],                   "manufacturer": "UAD",               "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "LA-2A Classic",    "aliases": ["LA2AClassic","UADLA2A"],           "natural_names": ["la-2a","la2a","uad la-2a"],                         "manufacturer": "UAD",               "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "CLA-2A",           "aliases": ["WavesCLA2A"],                      "natural_names": ["cla-2a","cla2a","waves cla"],                       "manufacturer": "Waves",             "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "CLA-76",           "aliases": ["WavesCLA76"],                      "natural_names": ["cla-76","cla76"],                                   "manufacturer": "Waves",             "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "TDR Kotelnikov",   "aliases": ["TDRKotelnikov"],                   "natural_names": ["tdr kotelnikov","kotelnikov"],                      "manufacturer": "Tokyo Dawn",        "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Presswerk",        "aliases": [],                                  "natural_names": ["presswerk","u-he presswerk"],                       "manufacturer": "u-he",              "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "BF-2A",            "aliases": ["BF2A"],                            "natural_names": ["bf-2a","bf2a","brainworx bf-2a"],                   "manufacturer": "Brainworx",         "type": "compressor",  "risk": "medium", "has_card": false, "card_file": ""},
+
+    {"name": "Valhalla Room",        "aliases": ["ValhallaRoom"],                "natural_names": ["valhalla room","valhallaroom"],                     "manufacturer": "Valhalla DSP",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Vintage Verb", "aliases": ["ValhallaVintageVerb"],        "natural_names": ["valhalla vintage verb","valhalla vintageverb"],      "manufacturer": "Valhalla DSP",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Shimmer",     "aliases": ["ValhallaShimmer"],             "natural_names": ["valhalla shimmer"],                                 "manufacturer": "Valhalla DSP",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Supermassive","aliases": ["ValhallaSupermassive"],        "natural_names": ["valhalla supermassive","supermassive"],              "manufacturer": "Valhalla DSP",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Plate",       "aliases": ["ValhallaPlate"],               "natural_names": ["valhalla plate"],                                   "manufacturer": "Valhalla DSP",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Delay",       "aliases": ["ValhallaDelay"],               "natural_names": ["valhalla delay"],                                   "manufacturer": "Valhalla DSP",      "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Valhalla Freq Echo",   "aliases": ["ValhallaFreqEcho"],            "natural_names": ["valhalla freq echo","freq echo"],                   "manufacturer": "Valhalla DSP",      "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Seventh Heaven",       "aliases": ["SeventhHeaven"],               "natural_names": ["seventh heaven"],                                   "manufacturer": "Liquidsonics",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Stratus 3D",           "aliases": ["Stratus3D"],                   "natural_names": ["stratus 3d","stratus3d"],                            "manufacturer": "Liquidsonics",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Cinematic Rooms",      "aliases": ["CinematicRooms"],              "natural_names": ["cinematic rooms"],                                  "manufacturer": "Liquidsonics",      "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "RC-48",                "aliases": ["RC48"],                        "natural_names": ["rc-48","rc48","uad rc-48"],                          "manufacturer": "UAD",               "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+
+    {"name": "Decapitator",      "aliases": [],                                  "natural_names": ["decapitator","soundtoys decapitator"],              "manufacturer": "Soundtoys",         "type": "saturation",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Devil-Loc",        "aliases": ["DevilLoc"],                        "natural_names": ["devil-loc","devilloc"],                             "manufacturer": "Soundtoys",         "type": "saturation",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Radiator",         "aliases": ["LittleRadiator"],                  "natural_names": ["radiator","little radiator"],                       "manufacturer": "Soundtoys",         "type": "saturation",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Satin",            "aliases": [],                                  "natural_names": ["satin","u-he satin"],                               "manufacturer": "u-he",              "type": "saturation",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "SDRR",             "aliases": [],                                  "natural_names": ["sdrr","klanghelm sdrr"],                            "manufacturer": "Klanghelm",         "type": "saturation",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Pro-DS",           "aliases": ["FabFilterProDS","ProDS"],          "natural_names": ["pro-ds","prods","fabfilter de-esser"],              "manufacturer": "FabFilter",         "type": "de-esser",    "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Soothe2",          "aliases": ["Soothe2"],                         "natural_names": ["soothe","soothe2","soothe 2"],                      "manufacturer": "oeksound",          "type": "dynamic_eq",  "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Gullfoss",         "aliases": [],                                  "natural_names": ["gullfoss","soundtheory gullfoss"],                  "manufacturer": "Soundtheory",       "type": "dynamic_eq",  "risk": "medium", "has_card": false, "card_file": ""},
+
+    {"name": "Ozone 11",         "aliases": ["iZotopeOzone11","Ozone11"],        "natural_names": ["ozone 11","ozone11","izotope ozone 11"],            "manufacturer": "iZotope",           "type": "mastering",   "risk": "high",   "has_card": false, "card_file": ""},
+    {"name": "Ozone 12",         "aliases": ["iZotopeOzone12","Ozone12"],        "natural_names": ["ozone","ozone 12","ozone12","izotope ozone"],       "manufacturer": "iZotope",           "type": "mastering",   "risk": "high",   "has_card": true,  "card_file": "Ozone 12 Operator Card.md"},
+    {"name": "Pro-L 2",          "aliases": ["FabFilterProL2","ProL2"],          "natural_names": ["pro-l 2","pro-l","prol2","fabfilter limiter","pro-l2"], "manufacturer": "FabFilter",    "type": "mastering",   "risk": "high",   "has_card": false, "card_file": ""},
+    {"name": "Limitless",        "aliases": [],                                  "natural_names": ["limitless","dmg limitless"],                        "manufacturer": "DMG Audio",         "type": "mastering",   "risk": "high",   "has_card": false, "card_file": ""},
+    {"name": "The God Particle", "aliases": ["TheGodParticle","GodParticle"],    "natural_names": ["god particle","the god particle","infected mushroom mastering"], "manufacturer": "Infected Mushroom", "type": "mastering", "risk": "high", "has_card": false, "card_file": ""},
+
+    {"name": "Serum",            "aliases": ["XferSerum"],                       "natural_names": ["serum","xfer serum"],                               "manufacturer": "Xfer Records",      "type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Serum 2",          "aliases": ["Serum2","XferSerum2"],             "natural_names": ["serum 2","serum2","xfer serum 2"],                  "manufacturer": "Xfer Records",      "type": "synth",       "risk": "medium", "has_card": true,  "card_file": "Serum 2 Operator Card.md"},
+    {"name": "Diva",             "aliases": ["u-heDiva"],                        "natural_names": ["diva","u-he diva"],                                 "manufacturer": "u-he",              "type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Omnisphere 2",     "aliases": ["Omnisphere2","Omnisphere"],        "natural_names": ["omnisphere","omnisphere 2"],                        "manufacturer": "Spectrasonics",     "type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Vital",            "aliases": [],                                  "natural_names": ["vital","matt tytel vital"],                         "manufacturer": "Matt Tytel",        "type": "synth",       "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Pigments",         "aliases": ["ArturiaPigments"],                 "natural_names": ["pigments","arturia pigments"],                      "manufacturer": "Arturia",           "type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Phase Plant",      "aliases": ["PhasePlant"],                      "natural_names": ["phase plant"],                                      "manufacturer": "Kilohearts",        "type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Massive X",        "aliases": ["MassiveX","NIMASSIveX"],           "natural_names": ["massive x","massivex","ni massive"],                "manufacturer": "Native Instruments","type": "synth",       "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "Kontakt 7",        "aliases": ["Kontakt7","NIKontakt7"],           "natural_names": ["kontakt","kontakt 7","ni kontakt"],                 "manufacturer": "Native Instruments","type": "sampler",     "risk": "medium", "has_card": false, "card_file": ""},
+
+    {"name": "RC-20 Retro Color","aliases": ["RC20RetroColor","RC-20"],          "natural_names": ["rc-20","rc20","retro color"],                       "manufacturer": "XLN Audio",         "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Little AlterBoy",  "aliases": ["LittleAlterBoy"],                  "natural_names": ["little alterboy","alterboy","alter boy"],           "manufacturer": "Soundtoys",         "type": "fx",          "risk": "medium", "has_card": false, "card_file": ""},
+    {"name": "EchoBoy",          "aliases": ["EchoBoyJr"],                       "natural_names": ["echoboy","echo boy"],                               "manufacturer": "Soundtoys",         "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "PanMan",           "aliases": [],                                  "natural_names": ["panman","pan man"],                                 "manufacturer": "Soundtoys",         "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Little MicroShift","aliases": ["LittleMicroShift"],                "natural_names": ["little microshift","microshift"],                   "manufacturer": "Soundtoys",         "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Little Plate",     "aliases": ["LittlePlate"],                     "natural_names": ["little plate","littleplate"],                       "manufacturer": "Soundtoys",         "type": "reverb",      "risk": "low",    "has_card": false, "card_file": ""},
+    {"name": "Crystallizer",     "aliases": [],                                  "natural_names": ["crystallizer"],                                     "manufacturer": "Soundtoys",         "type": "fx",          "risk": "low",    "has_card": false, "card_file": ""},
+
+    {"name": "EQ Eight",         "aliases": ["EQEight","AbletonEQ8"],            "natural_names": ["eq eight","eq8","ableton eq","eq 8"],               "manufacturer": "Ableton",           "type": "eq",          "risk": "low",    "has_card": true,  "card_file": "Ableton Stock Devices.md"},
+    {"name": "Compressor",       "aliases": ["AbletonCompressor"],               "natural_names": ["ableton compressor"],                               "manufacturer": "Ableton",           "type": "compressor",  "risk": "low",    "has_card": true,  "card_file": "Ableton Stock Devices.md"},
+    {"name": "Glue Compressor",  "aliases": ["GlueCompressor"],                  "natural_names": ["glue compressor","glue comp"],                      "manufacturer": "Ableton",           "type": "compressor",  "risk": "low",    "has_card": true,  "card_file": "Ableton Stock Devices.md"},
+    {"name": "Limiter",          "aliases": ["AbletonLimiter"],                  "natural_names": ["ableton limiter"],                                  "manufacturer": "Ableton",           "type": "limiter",     "risk": "low",    "has_card": true,  "card_file": "Ableton Stock Devices.md"}
+
+  ]
+}
