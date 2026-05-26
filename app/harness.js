@@ -56,29 +56,65 @@ const ACTION_REGISTRY = [
     { id: "clip_action", group: "Roadmap", label: "Edit MIDI Clip", endpoint: "/action/clip_edit", method: "POST", payload: {}, supported: false, future_reason: "Not built yet" }
 ];
 
-// ── CoProducer Translation Layer ─────────────────────────────────────────────
-function translateResponse(actionLabel, response) {
+// ── CoProducer Reply Composer ────────────────────────────────────────────────
+// Policy: backend controls facts (ok, error_code, verification_status,
+//         before_state/after_state). This layer controls wording only.
+// Rules:  calm, brief, studio-assistant tone. No endpoint names. No proof IDs.
+//         No raw error codes. No token/model metadata. No "locked"/"capability"
+//         permission-system language. Ask one question when info is missing.
+function composeReply(action, response) {
+    // Pull track name from structured state — never parse error strings.
+    const target =
+        (response.after_state  && response.after_state.track_name)  ||
+        (response.before_state && response.before_state.track_name) ||
+        null;
+
     if (!response.ok) {
-        const ec = response.error_code || response.error || "";
-        if (ec === "UNDO_DRIFT_DETECTED") return "Ableton has changed since I made that move, so I won\u2019t undo blindly.";
-        if (ec === "BRIDGE_PLUGIN_ABSENT") return "I couldn\u2019t find that plugin on the selected track.";
-        if (ec === "BRIDGE_PARAM_OUT_OF_RANGE") return "That value is outside the safe range for this control.";
-        if (ec === "BRIDGE_TRACK_ABSENT") return "I can\u2019t find that track. Double-check the name?";
-        if (ec === "SECURITY_CONFIRMATION_REQUIRED") return "This needs a quick confirmation before I touch it.";
-        if (ec === "SECURITY_CLARIFY_REQUIRED") return "I need one detail before I can do that safely.";
-        if (ec === "NEVER_DO_BLOCKED") return "I blocked this action. Your safety rules prohibit it.";
-        return "I couldn\u2019t complete that safely. Check the details if you want the technical reason.";
+        const ec = response.error_code || "";
+        switch (ec) {
+            case "UNDO_DRIFT_DETECTED":
+                return "Ableton changed since that move — skipping the undo to stay safe.";
+            case "BRIDGE_PLUGIN_ABSENT":
+                return target
+                    ? `Couldn’t find that plugin on ${target}.`
+                    : "Couldn’t find that plugin on the track.";
+            case "BRIDGE_PARAM_OUT_OF_RANGE":
+                return "That value is out of range for this control.";
+            case "BRIDGE_TRACK_ABSENT":
+                return "Can’t find that track — check the name?";
+            case "SECURITY_CONFIRMATION_REQUIRED":
+                return "That needs a quick confirmation before I touch it.";
+            case "SECURITY_CLARIFY_REQUIRED":
+                return "I need one more detail before I can do that safely.";
+            case "NEVER_DO_BLOCKED":
+                return "Your safety rules are blocking that.";
+            case "ABLETON_DISCONNECTED":
+                return "Ableton doesn’t seem to be connected — is Live running?";
+            default:
+                return "That didn’t go through — something stopped it.";
+        }
     }
-    if (response.verification_status === "VERIFIED") return "Confirmed in Ableton.";
-    if (response.verification_status === "ALREADY_CORRECT") return "It was already set that way.";
-    return "I tried, but couldn\u2019t confirm the change.";
+
+    const vs = response.verification_status || "";
+    if (vs === "VERIFIED")
+        return target
+            ? `Done — ${target} updated and confirmed.`
+            : "Done — confirmed in Ableton.";
+    if (vs === "ALREADY_CORRECT")
+        return target
+            ? `${target} was already set that way.`
+            : "Already set that way.";
+    // Applied but readback didn’t confirm (UNVERIFIED or missing)
+    return target
+        ? `Applied to ${target} — couldn’t read it back.`
+        : "Sent to Ableton — couldn’t read it back.";
 }
 
 function translateStatus(response) {
     if (!response.ok) return "Failed";
     if (response.verification_status === "VERIFIED") return "Confirmed";
     if (response.verification_status === "ALREADY_CORRECT") return "Already Correct";
-    return "Unknown";
+    return "Unverified";
 }
 
 // ── UI Elements ──────────────────────────────────────────────────────────────
@@ -269,15 +305,15 @@ async function handleSandboxChat(sourceInput = null) {
 
         const action = ACTION_REGISTRY.find(a => a.id === data.action_id);
         if (!action) {
-            addChatMessage(`I mapped that to "${data.action_id}", but it's not in my registry yet.`, "assistant");
-            if (fromFloatChat) addFloatHarnessMessage(`I mapped that to "${data.action_id}", but it's not in my registry yet.`, "assistant");
-            setStatus("Action not found in registry.", "failed");
+            addChatMessage("Not sure how to handle that one — try rephrasing?", "assistant");
+            if (fromFloatChat) addFloatHarnessMessage("Not sure how to handle that one — try rephrasing?", "assistant");
+            setStatus("Couldn't map that.", "failed");
             return;
         }
         if (!action.supported) {
-            addChatMessage(`I understand you want to ${action.label.toLowerCase()}, but that capability is locked: ${action.future_reason}.`, "assistant");
-            if (fromFloatChat) addFloatHarnessMessage(`I understand you want to ${action.label.toLowerCase()}, but that capability is locked: ${action.future_reason}.`, "assistant");
-            setStatus("Action locked.", "failed");
+            addChatMessage("I can't do that one in this version yet — it's on the roadmap.", "assistant");
+            if (fromFloatChat) addFloatHarnessMessage("I can't do that one in this version yet — it's on the roadmap.", "assistant");
+            setStatus("Not available yet.", "failed");
             return;
         }
 
@@ -336,32 +372,24 @@ function buildProposalDOM(proposal, compact = false) {
     reasonDiv.textContent = proposal.reason;
     container.appendChild(reasonDiv);
 
-    const metaDiv = document.createElement("div");
-    metaDiv.style.cssText = "font-size:10px; color:var(--text-tertiary); margin-bottom:6px;";
+    // Confidence is the only meta shown directly; endpoint/model/tokens go in debug details.
     const confPct = Math.round((proposal.confidence || 0) * 100);
-    const modelStr = proposal.ai_obs.model_name || "not reported";
-    const tokensStr = proposal.ai_obs.total_tokens || "not reported";
-    
-    const epSpan = document.createElement("span");
-    epSpan.textContent = "Endpoint: ";
-    const codeSpan = document.createElement("code");
-    codeSpan.textContent = proposal.endpoint;
-    const restSpan = document.createElement("span");
-    restSpan.textContent = ` | Confidence: ${confPct}% | Model: ${modelStr} | Tokens: ${tokensStr}`;
-    metaDiv.appendChild(epSpan);
-    metaDiv.appendChild(codeSpan);
-    metaDiv.appendChild(restSpan);
-    container.appendChild(metaDiv);
+    const confDiv = document.createElement("div");
+    confDiv.style.cssText = "font-size:11px; color:var(--text-secondary); margin-bottom:6px;";
+    confDiv.textContent = `Confidence: ${confPct}%`;
+    container.appendChild(confDiv);
 
     const details = document.createElement("details");
     details.style.cssText = "font-size:10px; color:var(--text-tertiary); margin-bottom:8px;";
     const summary = document.createElement("summary");
     summary.style.cursor = "pointer";
-    summary.textContent = "Parameters";
+    summary.textContent = "Debug info";
     details.appendChild(summary);
+    const modelStr = proposal.ai_obs.model_name || "not reported";
+    const tokensStr = proposal.ai_obs.total_tokens || "not reported";
     const pre = document.createElement("pre");
     pre.style.cssText = "background:rgba(0,0,0,0.3); padding:6px; border-radius:4px; margin-top:4px; color:#a3adbd; font-size:10px;";
-    pre.textContent = JSON.stringify(proposal.params, null, 2);
+    pre.textContent = `Endpoint: ${proposal.endpoint}\nModel: ${modelStr} | Tokens: ${tokensStr}\n\nParams:\n${JSON.stringify(proposal.params, null, 2)}`;
     details.appendChild(pre);
     if (!compact) container.appendChild(details);
 
@@ -416,7 +444,7 @@ function updateSessionTotals() {
     if (!totalsDiv) {
         totalsDiv = document.createElement("div");
         totalsDiv.id = "session-totals-block";
-        totalsDiv.style.cssText = "font-size: 11px; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;";
+        totalsDiv.style.cssText = "font-size: 11px; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;";
         const tasksBody = document.querySelector(".tasks-body .activity-now");
         if (tasksBody) tasksBody.insertBefore(totalsDiv, document.getElementById("status-display"));
     }
@@ -425,8 +453,6 @@ function updateSessionTotals() {
         <div><strong style="color:var(--success)">Verified:</strong> ${sessionStats.verified}</div>
         <div><strong style="color:var(--destructive)">Failed:</strong> ${sessionStats.failed}</div>
         <div><strong>Time:</strong> ${sessionStats.totalTimeMs}ms</div>
-        <div><strong>Tokens:</strong> ${sessionStats.totalTokens > 0 ? sessionStats.totalTokens : "not reported"}</div>
-        <div><strong>Est. Cost:</strong> ${sessionStats.estimatedCostUsd > 0 ? "$" + sessionStats.estimatedCostUsd.toFixed(5) : "not reported"}</div>
     `;
 }
 
@@ -492,10 +518,10 @@ function renderActionButtons() {
             btn.appendChild(labelSpan);
             if (!action.supported) {
                 btn.disabled = true;
-                btn.title = `Capability locked. ${action.future_reason}`;
+                btn.title = "Not built yet — on the roadmap.";
                 const reasonSpan = document.createElement("span");
                 reasonSpan.style.cssText = "font-size: 10px; color: var(--text-tertiary);";
-                reasonSpan.textContent = "Locked";
+                reasonSpan.textContent = "Roadmap";
                 btn.appendChild(reasonSpan);
             } else {
                 btn.appendChild(execSpan);
@@ -597,7 +623,7 @@ async function executeAction(action, aiObs = null) {
                 { ok: false, error_code: "BRIDGE_PLUGIN_ABSENT" }
             ];
             const sim = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-            const text = translateResponse(action.label, sim);
+            const text = composeReply(action, sim);
             const statusStr = translateStatus(sim);
             const obs = {
                 request_started_at: reqStartedAt, request_completed_at: reqCompletedAt,
@@ -630,7 +656,7 @@ async function executeAction(action, aiObs = null) {
         const endTime = performance.now();
         const reqCompletedAt = new Date().toISOString();
         const durationMs = Math.round(endTime - startTime);
-        const text = translateResponse(action.label, data);
+        const text = composeReply(action, data);
         const statusStr = translateStatus(data);
         const obs = {
             request_started_at: reqStartedAt, request_completed_at: reqCompletedAt,

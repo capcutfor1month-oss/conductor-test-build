@@ -2,6 +2,8 @@
 
 > **Target Audience:** Aditya (Product Owner) & Advanced Agentic Coding Team
 > **Context:** Conductor must retain its soul as a personal assistant, mentor, and assistant engineer. The new build brings public-grade safety, but we must ensure it does not regress into a sterile, limited developer utility.
+>
+> **Supersession Note (May 2026):** Several missing-capability warnings in Sections E and G below have been resolved by Expanded Actions Slices 1–2 (track management, routing, sends, transport) and Slice 3A (plugin_bypass), plus Live Harness v1.5 (`app/harness.html`). However, the core product-feel re-alignment (Sections D, F, H) remains pending — safe actions still feel like bank approvals rather than effortless studio operations. The next correction slice targets: docs → harness UX → session-state context → metadata hiding / risky-action cleanup.
 
 ---
 

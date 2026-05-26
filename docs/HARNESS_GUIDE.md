@@ -2,6 +2,8 @@
 
 The Live Harness provides a secure, isolated frontend for testing Conductor's verified `/action/*` backend endpoints. It preserves the Phase 2 GPT Notch premium UI and adds AI Sandbox Mode for realistic natural-language testing.
 
+> **Product Status:** Live Harness v1.5 is a **product-preview shell**, not the final shipped UI. It is useful for development and controlled testing but needs UX re-alignment before friend-test deployment. Safe actions should eventually feel effortless — backend safety stays under the hood, not surfaced as bank-approval UI. Debug/token/endpoint details are developer-only and must not appear in production surfaces.
+
 ## How to Run
 
 ```bash
@@ -31,6 +33,8 @@ The harness proxy server (`tools/harness_server.py`) serves the UI **and** provi
 - The floating chat shows a compact proposal card with its own **Send to Live Mode** button; the panel chat shows the full proposal with parameters
 - If the model can't map your request, it shows a studio-language clarification
 - Sandbox chat history and proposals are browser-only — never written to producer memory
+
+> **UX Note:** AI Sandbox currently works but its product UX needs re-alignment. The interaction model should eventually feel like talking to a co-producer, not submitting API requests.
 
 ### Demo / Mock Mode
 - UI-only simulation, no backend calls
@@ -127,6 +131,8 @@ Every executed action creates a Timeline entry with a collapsible **Debug Data**
 - Sandbox session ID if applicable
 - Raw response JSON
 
+> **Developer-only:** All debug drawer contents are developer-only. Token counts, proof IDs, endpoint paths, and raw JSON must never appear in the primary product UI for end users.
+
 ## Supported Actions
 
 | Group | Action | Endpoint | Status |
@@ -174,3 +180,20 @@ As future slices are built and locked:
 - If unavailable: "not reported" — never guessed or faked
 - Token/cost details appear only in the Debug Drawer, not primary product UI
 - Session reports include full observability data for audit
+
+## Disabled Actions & Confirmation Policy
+
+The following actions are backend-locked but **disabled in the harness** pending proper confirmation UI:
+
+| Action | Reason |
+|--------|--------|
+| `track_delete` | Destructive — requires confirmation dialog before execution |
+| `transport_record` | Session-altering — requires confirmation dialog before execution |
+
+**Routing actions** (`track_route`, `track_send`) are enabled but should be treated carefully — routing changes can require confirmation depending on the target (e.g., master bus routing). Confirmation policy for routing is TBD.
+
+## Re-Alignment Notes
+
+- In the future correction slice, safe actions should **not feel like bank approvals**. The goal is effortless studio interaction with silent backend safety.
+- The CoProducer Translation Layer (not yet built) will wrap all ActionProofs, drift errors, and bridge errors in human-readable assistant dialogue before they reach the user.
+- Until that layer exists, the harness remains a developer-preview tool.

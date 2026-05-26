@@ -1,0 +1,64 @@
+# Graphify ignore file for TEST-BUILD
+# Syntax: same as .gitignore
+
+# Build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Graphify own output
+graphify-out/
+
+# Runtime / logs (no indexing value)
+memory/chromadb/
+memory/action_log.jsonl
+memory/action_proof_log.jsonl
+memory/feedback_log.jsonl
+memory/context_pack_log.jsonl
+memory/undo_log.jsonl
+tmp/
+logs/
+
+# Large binary / media files
+*.wav
+*.mp3
+*.aif
+*.aiff
+*.mid
+*.midi
+*.flac
+*.ogg
+*.m4a
+*.mp4
+*.mov
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.woff
+*.woff2
+*.ttf
+
+# Third-party remote scripts (not our code)
+machine-assets/ableton-remote-scripts/
+
+# NotebookLM source PDFs (large, not code)
+NotebookLM Sources/
+
+# Secrets
+.env
+*.env
+
+# Node
+node_modules/
+package-lock.json
+
+# Git internals
+.git/
+
+# macOS
+.DS_Store

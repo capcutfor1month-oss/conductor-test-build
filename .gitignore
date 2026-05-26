@@ -12,3 +12,4 @@ memory/action_proof_log.jsonl
 memory/feedback_log.jsonl
 memory/context_pack_log.jsonl
 memory/undo_log.jsonl
+graphify-out/

@@ -21,6 +21,20 @@ Phase C — ✅ COMPLETE
 Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–2 complete, Expanded Slice 3A complete)
 Phase E — NOT STARTED
 
+### Locked Slices (current build)
+- D Slices 1–5: PASS/LOCKED
+- Expanded Actions Slice 1 (track management): PASS/LOCKED
+- Expanded Actions Slice 2 (routing/sends/transport): PASS/LOCKED
+- Expanded Actions Slice 3A (plugin_bypass): PASS/LOCKED
+- Live Harness v1.5 (`app/harness.html`): present — product-preview shell
+
+### Pending (not built)
+- Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
+- `track_delete` and `transport_record` disabled in harness pending confirmation UI
+- `route_track` routing actions require careful confirmation policy
+- ChromaDB memory may be missing locally — do not describe as fully available unless installed
+- Future slices: plugin_param, plugin_load, export/bounce, clip/scene, memory promotion, marketplace, tutorial creator, Studio OS expansion remain roadmap
+
 ---
 
 ## PHASE A — FOUNDATION

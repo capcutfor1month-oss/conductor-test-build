@@ -10,6 +10,7 @@ Codex is the second engineer and strict reviewer for Conductor. Claude Code rema
 - Do not broaden scope beyond the requested phase/slice/cleanup.
 - Do not change Conductor runtime behavior during review-only requests.
 - **Audit for silent product scope decisions.** If an old feature is missing or silently dropped, flag it.
+- **Note:** Expanded Actions Slices 1, 2, and 3A are now LOCKED. Track management, routing, sends, transport, and plugin_bypass are part of the current build — do not flag these as missing.
 - **Do not assume 'friend-test' means a rough engineering build.** Ensure all user-facing features have premium product behavior (no raw JSON, no backend error enums in the UI).
 - **Do not default to HARD_BLOCK for safety.** Flag if Claude assumes a HARD_BLOCK when a UI Confirmation step would preserve user agency.
 

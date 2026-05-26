@@ -1,5 +1,7 @@
 # Conductor — Handoff: Current State
 > Created: May 2026. Do not rewrite history — append updates below.
+>
+> **Source-of-truth note:** `tmp/HANDOFF_CURRENT_STATE.md` is the active operational handoff (latest slice state + key files). `tmp/BUILD_PHASES.md` is the active phase tracker. This root file is the durable summary — kept in sync but not the first-read doc.
 
 ---
 
@@ -8,7 +10,10 @@
 Phase D Slices 1–5 are complete and audited (PASS/LOCKED).
 Expanded Actions Slice 1 is PASS/LOCKED (track_create, track_delete, track_duplicate, track_arm, track_monitor, track_rename, track_color, return_track_create, tracks_create_multiple).
 Expanded Actions Slice 2 is PASS/LOCKED (track_send, track_route, transport_play, transport_stop, transport_record, transport_loop, transport_metronome).
+Expanded Actions Slice 3A (`POST /action/plugin_bypass`) is PASS/LOCKED (9/9 tests).
 All test suites pass. Phase C is stable.
+Live Harness v1.5 is present (`app/harness.html`) — product-preview shell, not final shipped UI.
+Product-layer re-alignment is pending (docs → harness UX → session-state → metadata hiding).
 
 ---
 
@@ -26,6 +31,7 @@ All test suites pass. Phase C is stable.
 | D Slice 5 — Never-do preflight gate | ✅ Complete |
 | Expanded Actions Slice 1 — Create, Delete, Duplicate, Color, Rename, Group tracks | ✅ Complete (PASS/LOCKED) |
 | Expanded Actions Slice 2 — Routing, Sends, Arm, Monitor | ✅ Complete (PASS/LOCKED) |
+| Expanded Actions Slice 3A — `POST /action/plugin_bypass` | ✅ Complete (PASS/LOCKED) |
 
 ---
 
@@ -48,10 +54,11 @@ All test suites pass. Phase C is stable.
 
 ## CURRENT BLOCKERS
 
-- **UI Trust Behavior & Prototype Status:** `app/index.html` (phase 2 HTML) is prototype UI only. Prototype "Execute" buttons do not represent production trust behavior.
+- **Active Harness:** `app/harness.html` is the current product-preview shell (Live Harness v1.5). `app/index.html` is the legacy Phase 2 prototype — not the active harness.
+- **UI Trust Behavior & Prototype Status:** Live Harness is a developer-facing testing shell. Prototype "Execute" buttons do not represent production trust behavior.
 - **Strict Verification Path:** Before friend-test UI is deployed, every Execute path must call verified `/action/*` endpoints. UI must never show "Executed" unless the backend returns a verified action response.
 - **Co-Producer Translation Layer:** A `CoProducerResponse` / translation layer is strictly required before deploying production UI.
-- **Product Direction:** Conductor must feel like a premium studio assistant, not a bank approval app or dev endpoint.
+- **Product Direction:** Conductor must feel like a premium studio assistant — safe actions should feel effortless, with backend safety under the hood. Not a bank approval system or dev endpoint.
 
 ---
 
@@ -61,7 +68,7 @@ All test suites pass. Phase C is stable.
 |---|---|
 | `frequency` score in C2 temporal scoring stubbed at `0.5` | Phase D Slice 5+ (needs `POST /feedback` access count tracking wired) |
 | Memory promotion not built — Level 1 raw events never reach Level 2/3 | Phase D Slice 5+ (`rag/memory_promotion.py` not created yet) |
-| Never-do preflight gate not wired to `POST /action/*` endpoints | Phase D Slice 5 (D5) — `never_do_rules.md` exists, enforcement absent |
+| ~~Never-do preflight gate~~ | ✅ Wired — D5 complete. Deterministic enforcement on all write endpoints. |
 | Plugin parameter verification (PluginBridge readback) not wired | Phase D Slice 5+ |
 | Bridge not auto-launched | Manual: `bash tools/start_bridge.sh` |
 | UI Tutorials panel not built | Users cannot connect NotebookLM or Ableton from within the app |
@@ -96,7 +103,7 @@ All test suites pass. Phase C is stable.
 - **Batch undo / undo list / undo debugger** — out of scope, Slice 5+
 - **Graph RAG / LightRAG / reference track DNA** — Phase E, not started
 - **Hosted server / public user model** — Phase F, not started
-- **New action types beyond volume/pan/mute/solo** — wait for Phase D Slice 5
+- ~~New action types beyond volume/pan/mute/solo~~ — **resolved.** Expanded Actions Slices 1, 2, and 3A are locked. Do not add future action types unless explicitly scoped, but locked expanded actions are now part of current build.
 - **Memory promotion ("dreaming")** — Slice 5+ only
 - **Loosening `CONTRADICTION_OVERLAP_THRESHOLD`** — do not change without running Phase C Section 26
 - **`confirm=True` bypass for Gates 1 or 2 in undo** — permanently rejected
@@ -159,3 +166,20 @@ All three were fixed May 2026. Pre-cleans are in place. These can recur if a tes
 8. **Never touch Phase D behavior to fix a Phase C test failure.** Fix Phase C first.
 9. **Never refactor broadly when Codex returns a FAIL.** Fix only named blockers.
 10. **Never start a scope-boundary item (batch undo, graph RAG, hosted server, Electron) without explicit user request.**
+
+---
+
+## CURRENT RE-ALIGNMENT STATUS
+
+> Added May 2026 after Codex re-alignment audit.
+
+| Area | Status | Notes |
+|---|---|---|
+| Backend trust (ActionProof, readback, never-do, undo, drift, logs, feedback) | ✅ Preserve | Strong foundation — do not regress. |
+| Product feel | ❌ FAIL — needs correction | Safe actions feel like bank approvals. Must feel effortless; backend safety stays under the hood. |
+| Live Harness v1.5 (`app/harness.html`) | ⚠️ Useful but needs UX cleanup | Developer-preview shell. AI Sandbox works but product UX needs re-alignment. |
+| Docs | ⚠️ Stale / conflicting | This realignment pass corrects known stale claims. |
+| Next fixes (in order) | — | Docs cleanup → harness UX → session-state context → metadata hiding / risky-action cleanup |
+| `track_delete` and `transport_record` | 🔒 Disabled in harness | Pending proper confirmation UI. |
+| `route_track` / routing actions | ⚠️ Careful | Routing can require confirmation — policy TBD. |
+| ChromaDB memory | ⚠️ May be missing locally | Do not describe as fully available unless installed and seeded. |

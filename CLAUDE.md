@@ -36,7 +36,7 @@ It is a product. Treat every decision — architecture, UX, safety, output — a
 
 ```
 User message
-    → Conductor UI (app/index.html)
+    → Conductor UI (app/harness.html — Live Harness v1.5, active product-preview shell)
     → Anthropic API (Claude) — system_prompt.md injected every call
     → Conductor Bridge (localhost:4611) — HTTP, single gateway to all tools
          ├── Ableton Live (TCP 16619) — Python LOM execution
@@ -81,7 +81,7 @@ All 4 layers are wired (Phase B complete). Retrieval quality is Phase C (complet
 | E | ❌ Not started | Graph RAG, reference track DNA, Ragas evaluation |
 | F | ❌ Not started | Hosted update server, team knowledge sync, public user model |
 
-**Status:** Paused after Expanded Slice 3A. Ask user which slice to build next. See `tmp/HANDOFF_CURRENT_STATE.md` for full locked state + roadmap. `app/index.html` is prototype-only — `CoProducerResponse` translation required before any friend-test UI.
+**Status:** Paused after Expanded Slice 3A. Ask user which slice to build next. See `tmp/HANDOFF_CURRENT_STATE.md` for full locked state + roadmap. `app/harness.html` is the active product-preview shell (Live Harness v1.5). `app/index.html` is the legacy Phase 2 prototype — not the active harness. `CoProducerResponse` translation required before any friend-test UI.
 
 ---
 
@@ -108,7 +108,8 @@ All 4 layers are wired (Phase B complete). Retrieval quality is Phase C (complet
 | Producer DNA + never-do rules | `conductor-vault/producer/` |
 | Operator cards (Pro-Q 4, Ozone 12, Serum 2, stock) | `conductor-vault/plugins/` |
 | System prompt (injected every API call) | `app/system_prompt.md` |
-| UI | `app/index.html` |
+| UI (active harness) | `app/harness.html` — Live Harness v1.5 |
+| UI (legacy prototype) | `app/index.html` — Phase 2 prototype, not active |
 | ChromaDB storage | `memory/chromadb/` |
 
 ---
@@ -152,7 +153,7 @@ These are permanently out of scope until explicitly asked for:
 - Memory promotion (Slice 5+ only)
 - Graph RAG / reference track DNA (Phase E)
 - Hosted server / public user model (Phase F)
-- New action types beyond volume/pan/mute/solo (wait for Phase D Slice 5)
+- ~~New action types beyond volume/pan/mute/solo~~ — **resolved.** Expanded Actions Slices 1, 2, and 3A are locked. Do not add future action types unless explicitly scoped, but locked expanded actions are now part of current build.
 
 If a task description implies building one of these — stop and confirm. Do not gold-plate.
 

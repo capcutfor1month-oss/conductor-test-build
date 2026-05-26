@@ -185,6 +185,40 @@ def _parse_bool_strict(value, param_name: str) -> "tuple":
     )
 
 
+def _parse_confirm_strict(value) -> "tuple":
+    """
+    Strict parser for the optional 'confirm' field in action endpoints.
+
+    Differs from _parse_bool_strict in one key way:
+        absent (None) → (False, "")   — no error; absence means not confirmed
+        bool           → (bool,  "")  — JSON true/false accepted directly
+        "true"/"false" → (bool,  "")  — case-insensitive strings accepted
+        anything else  → (None, msg)  — caller must return 400
+
+    Specifically rejects: "yes", "no", "maybe", integers (0, 1), lists, dicts,
+    or any other non-boolean, non-string value.
+
+    Motivation: bool("false") == True in Python.  Sending confirm="false" must
+    leave the gate closed, not open it.  This function prevents that entire
+    class of bug on all destructive endpoints.
+    """
+    if value is None:
+        return False, ""
+    if isinstance(value, bool):
+        return value, ""
+    if isinstance(value, str):
+        lv = value.strip().lower()
+        if lv == "true":
+            return True, ""
+        if lv == "false":
+            return False, ""
+    return None, (
+        f"'confirm' must be a JSON boolean (true or false), got: {value!r}. "
+        "Strings 'true'/'false' are accepted. "
+        "Integers, 'yes', 'no', 'maybe', and other values are not."
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 BRIDGE_PORT = 4611   # TEST-BUILD uses 4611 — old personal build uses 4601
@@ -522,6 +556,94 @@ class ConductorHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "system_prompt.md not found"}, 404)
             except Exception as e:
                 self._send_json({"error": str(e)}, 500)
+
+        # ── GET /session/state ────────────────────────────────────────────────
+        # Read-only live snapshot of Ableton session state via TCP 16619.
+        # Uses ableton_execute() (v2 flat protocol) — no new adapter.
+        # state_completeness tells callers exactly what is/isn't available.
+        # Clips, devices, and routing are NOT read — marked "not_available_v1"
+        # so callers never mistake absent data for empty data.
+        elif path == "/session/state":
+            if not ableton_connected():
+                return self._send_json({
+                    "ok":               False,
+                    "ableton_connected": False,
+                    "error":            "Ableton not connected",
+                }, 503)
+
+            # Single eval expression — all reliable state in one TCP round-trip.
+            _main_code = (
+                "{"
+                "'tempo': song.tempo, "
+                "'time_signature': "
+                    "str(song.signature_numerator) + '/' + str(song.signature_denominator), "
+                "'playing': bool(song.is_playing), "
+                "'record': bool(song.record_mode), "
+                "'tracks': [{"
+                    "'index': i, "
+                    "'name': t.name, "
+                    "'type': 'midi' if getattr(t, 'has_midi_input', False) else ('audio' if getattr(t, 'has_audio_input', False) else 'unknown'), "
+                    "'muted': bool(t.mute), "
+                    "'soloed': bool(getattr(t, 'solo', False)), "
+                    "'arm': bool(getattr(t, 'arm', False))"
+                "} for i, t in enumerate(song.tracks)], "
+                "'return_tracks': [{"
+                    "'index': i, "
+                    "'name': t.name"
+                "} for i, t in enumerate(song.return_tracks)]"
+                "}"
+            )
+            main_resp = ableton_execute(_main_code)
+            if not main_resp.get("ok"):
+                return self._send_json({
+                    "ok":               False,
+                    "ableton_connected": True,
+                    "source":           "ableton_mcp",
+                    "error":            main_resp.get("error") or "Failed to read session state",
+                }, 502)
+
+            state = (main_resp.get("data") or {}).get("result")
+            if not isinstance(state, dict):
+                return self._send_json({
+                    "ok":               False,
+                    "ableton_connected": True,
+                    "source":           "ableton_mcp",
+                    "error":            "Unexpected LOM response — state was not a dict",
+                }, 502)
+
+            # Selected track — best-effort via exec (try/except inside LOM).
+            # Must never raise 500: if this read fails, selected_track = null.
+            _sel_code = (
+                "try:\n"
+                "    result = song.view.selected_track.name\n"
+                "except Exception:\n"
+                "    result = None\n"
+            )
+            sel_resp  = ableton_execute(_sel_code)
+            sel_raw   = (sel_resp.get("data") or {}).get("result") if sel_resp.get("ok") else None
+            selected_track = sel_raw if isinstance(sel_raw, str) else None
+
+            return self._send_json({
+                "ok":               True,
+                "ableton_connected": True,
+                "source":           "ableton_mcp",
+                "tempo":            state.get("tempo"),
+                "time_signature":   state.get("time_signature"),
+                "playing":          state.get("playing"),
+                "record":           state.get("record"),
+                "selected_track":   selected_track,
+                "tracks":           state.get("tracks", []),
+                "return_tracks":    state.get("return_tracks", []),
+                "state_completeness": {
+                    "tracks":       "full",
+                    "return_tracks": "full",
+                    "tempo":        "full",
+                    "selected_track": "best_effort",
+                    "clips":        "not_available_v1",
+                    "devices":      "not_available_v1",
+                    "routing":      "not_available_v1",
+                },
+            })
 
         else:
             self._send_json({"error": f"unknown endpoint: {path}"}, 404)
@@ -1492,14 +1614,12 @@ class ConductorHandler(BaseHTTPRequestHandler):
             proof_id_raw  = str(body.get("proof_id")  or "").strip()
             action_id_raw = str(body.get("action_id") or "").strip()
 
-            # parse confirm — accept Python bool or "true"/"false" string
-            confirm_raw = body.get("confirm", False)
-            if isinstance(confirm_raw, bool):
-                confirm = confirm_raw
-            elif str(confirm_raw).lower() == "true":
-                confirm = True
-            else:
-                confirm = False
+            # parse confirm — absent=False, bool/string accepted, anything else→400
+            confirm, confirm_err = _parse_confirm_strict(body.get("confirm"))
+            if confirm is None:
+                return self._send_json(
+                    error_response(BridgeErrorCode.BRIDGE_PARAM_OUT_OF_RANGE,
+                                   confirm_err, request_id=request_id), 400)
 
             # ── Require at least one reference ───────────────────────────────
             if not proof_id_raw and not action_id_raw:
@@ -2426,7 +2546,12 @@ class ConductorHandler(BaseHTTPRequestHandler):
             action_id  = _new_action_id()
             session_id = body.get("session_id") or _SESSION_ID
             project_id = str(body.get("project_id") or "")
-            confirm    = bool(body.get("confirm", False))
+            confirm, confirm_err = _parse_confirm_strict(body.get("confirm"))
+            if confirm is None:
+                return self._send_json(
+                    error_response(BridgeErrorCode.BRIDGE_PARAM_OUT_OF_RANGE,
+                                   confirm_err, request_id=request_id,
+                                   action_id=action_id), 400)
 
             track = body.get("track")
             if track is None:
@@ -2824,7 +2949,12 @@ class ConductorHandler(BaseHTTPRequestHandler):
             action_id  = _new_action_id()
             session_id = body.get("session_id") or _SESSION_ID
             project_id = str(body.get("project_id") or "")
-            confirm    = bool(body.get("confirm", False))
+            confirm, confirm_err = _parse_confirm_strict(body.get("confirm"))
+            if confirm is None:
+                return self._send_json(
+                    error_response(BridgeErrorCode.BRIDGE_PARAM_OUT_OF_RANGE,
+                                   confirm_err, request_id=request_id,
+                                   action_id=action_id), 400)
 
             count_raw = body.get("count")
             if count_raw is None:
@@ -3072,7 +3202,12 @@ class ConductorHandler(BaseHTTPRequestHandler):
             action_id  = _new_action_id()
             session_id = body.get("session_id") or _SESSION_ID
             project_id = str(body.get("project_id") or "")
-            confirm    = bool(body.get("confirm", False))
+            confirm, confirm_err = _parse_confirm_strict(body.get("confirm"))
+            if confirm is None:
+                return self._send_json(
+                    error_response(BridgeErrorCode.BRIDGE_PARAM_OUT_OF_RANGE,
+                                   confirm_err,
+                                   request_id=request_id, action_id=action_id), 400)
 
             track = body.get("track")
             if track is None:
@@ -3649,7 +3784,12 @@ class ConductorHandler(BaseHTTPRequestHandler):
             action_id  = _new_action_id()
             session_id = body.get("session_id") or _SESSION_ID
             project_id = str(body.get("project_id") or "")
-            confirm    = bool(body.get("confirm", False))
+            confirm, confirm_err = _parse_confirm_strict(body.get("confirm"))
+            if confirm is None:
+                return self._send_json(
+                    error_response(BridgeErrorCode.BRIDGE_PARAM_OUT_OF_RANGE,
+                                   confirm_err,
+                                   request_id=request_id, action_id=action_id), 400)
 
             record_raw = body.get("record")
             if record_raw is None:
