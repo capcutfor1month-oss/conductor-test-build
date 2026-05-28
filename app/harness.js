@@ -118,12 +118,13 @@ function translateStatus(response) {
 }
 
 // ── UI Elements ──────────────────────────────────────────────────────────────
-const actionContainer = document.getElementById("action-buttons-container");
+const actionContainer = document.getElementById("advanced-action-buttons-container");
 const timelineContainer = document.getElementById("timeline-container");
 const statusDisplay = document.getElementById("status-display");
 const coproducerBox = document.getElementById("coproducer-response");
 const modeSelect = document.getElementById("harness-mode-select");
 const resetBtn = document.getElementById("reset-session-btn");
+const advancedClearBtn = document.getElementById("advancedClearBtn");
 
 // ── Initialization ───────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -147,15 +148,22 @@ document.addEventListener("DOMContentLoaded", () => {
             else resetMainUI();
         });
     }
+    if (advancedClearBtn) {
+        advancedClearBtn.addEventListener("click", () => {
+            if (currentMode === "sandbox") resetSandbox();
+            else resetMainUI();
+        });
+    }
 
     // Export button
-    if (resetBtn && !document.getElementById("export-report-btn")) {
+    if ((advancedClearBtn || resetBtn) && !document.getElementById("export-report-btn")) {
         const exportBtn = document.createElement("button");
         exportBtn.id = "export-report-btn";
         exportBtn.textContent = "Export Report";
-        exportBtn.style.cssText = "background:none; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer; margin-left:12px;";
+        exportBtn.style.cssText = "background:var(--surface-2); border:1px solid var(--border-subtle); color:var(--text-primary); border-radius:7px; padding:5px 8px; font-size:11px; cursor:pointer;";
         exportBtn.addEventListener("click", exportSessionReport);
-        resetBtn.parentNode.insertBefore(exportBtn, resetBtn.nextSibling);
+        if (advancedClearBtn) advancedClearBtn.parentNode.insertBefore(exportBtn, advancedClearBtn.nextSibling);
+        else resetBtn.parentNode.insertBefore(exportBtn, resetBtn.nextSibling);
     }
 
     // Wire both chat surfaces. The old prototype fake chat handler is bypassed.
@@ -226,21 +234,49 @@ function showParserStatus(text) {
     setStatus(text, text === "Calling AI parser" ? "requesting" : "idle");
     const floatStatus = document.getElementById("floatHarnessStatus");
     if (floatStatus) floatStatus.textContent = text;
+    if (typeof window.setNotchState === "function") {
+        if (text === "Calling AI parser") window.setNotchState("thinking");
+        if (text === "Parser returned") window.setNotchState("default");
+    }
 }
 
 function addFloatHarnessMessage(content, role) {
     const messages = document.getElementById("floatMessages");
     if (!messages) return;
+    if (role === "assistant") removeFloatThinkingMessage();
     const msg = document.createElement("div");
     msg.className = role === "user" ? "fc-user-msg" : "fc-ai-msg";
     if (typeof content === "string") msg.textContent = content;
     else msg.appendChild(content);
     messages.appendChild(msg);
     messages.scrollTop = messages.scrollHeight;
+    return msg;
+}
+
+function showFloatThinkingMessage(label = "Conductor is thinking...") {
+    const messages = document.getElementById("floatMessages");
+    if (!messages || document.getElementById("floatThinkingMsg")) return;
+    const msg = document.createElement("div");
+    msg.id = "floatThinkingMsg";
+    msg.className = "fc-thinking-msg";
+    const dot = document.createElement("span");
+    dot.className = "fc-thinking-dot";
+    msg.appendChild(dot);
+    msg.appendChild(document.createTextNode(label));
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+function removeFloatThinkingMessage() {
+    const msg = document.getElementById("floatThinkingMsg");
+    if (msg) msg.remove();
 }
 
 async function handleSandboxChat(sourceInput = null) {
-    const input = sourceInput || document.getElementById("chatInput") || document.getElementById("floatChatInput");
+    let input = sourceInput || document.getElementById("chatInput") || document.getElementById("floatChatInput");
+    if (input && input.id === "chatInput" && typeof window.prepareAttachedChatFromSessionInput === "function") {
+        input = window.prepareAttachedChatFromSessionInput(input) || input;
+    }
     if (!input || !input.value.trim()) return;
     const userText = input.value.trim();
     const fromFloatChat = input.id === "floatChatInput";
@@ -248,35 +284,42 @@ async function handleSandboxChat(sourceInput = null) {
     console.log("[Harness] submit captured");
     console.log(`[Harness] current mode: ${currentMode}`);
     showParserStatus("Submit captured");
-    
+
+    const floatChat = document.getElementById("floatChat");
+    if (floatChat) floatChat.classList.remove("fc-long-response");
+
     if (currentMode !== "sandbox") {
         if (currentMode === "demo") {
             input.value = "";
             addChatMessage(userText, "user");
             if (fromFloatChat) addFloatHarnessMessage(userText, "user");
+            if (fromFloatChat) showFloatThinkingMessage();
             setStatus("Demo Mode: simulating AI...", "requesting");
             setTimeout(() => {
                 addChatMessage("This is a demo mode simulation. No backend was called.", "assistant");
                 if (fromFloatChat) addFloatHarnessMessage("This is a demo mode simulation. No backend was called.", "assistant");
                 setStatus("Demo simulation complete.", "idle");
+                if (typeof window.setNotchState === "function") window.setNotchState("default");
             }, 800);
             return;
         }
         showCoProducerResponse("Switch to AI Sandbox Mode to use chat.", true);
+        if (typeof window.setNotchState === "function") window.setNotchState("default");
         return;
     }
 
     input.value = "";
     addChatMessage(userText, "user");
     if (fromFloatChat) addFloatHarnessMessage(userText, "user");
+    if (fromFloatChat) showFloatThinkingMessage();
     sandboxChatHistory.push({ role: "user", text: userText, ts: new Date().toISOString() });
     showParserStatus("Calling AI parser");
     const startTime = performance.now();
     const reqStartedAt = new Date().toISOString();
 
     try {
-        console.log("[Harness] calling /harness/parse_intent");
-        const res = await fetch("/harness/parse_intent", {
+        console.log("[Harness] calling /harness/orchestrate");
+        const res = await fetch("/harness/orchestrate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: userText })
@@ -300,6 +343,19 @@ async function handleSandboxChat(sourceInput = null) {
             if (fromFloatChat) addFloatHarnessMessage(data.clarification, "assistant");
             sandboxChatHistory.push({ role: "assistant", text: data.clarification, ts: new Date().toISOString() });
             setStatus("AI needs clarification.", "idle");
+            return;
+        }
+
+        // Knowledge / mentor / read / clarify answer — display directly, no proposal card.
+        if (data.type === "answer") {
+            const answerText = data.text || "Couldn't get an answer — try rephrasing?";
+            addChatMessage(answerText, "assistant");
+            if (fromFloatChat) addFloatHarnessMessage(answerText, "assistant");
+            sandboxChatHistory.push({ role: "assistant", text: answerText, ts: new Date().toISOString() });
+            if (data.tokens && data.tokens.total) sessionStats.totalTokens += data.tokens.total;
+            updateSessionTotals();
+            setStatus("Answer ready.", "idle");
+            if (typeof window.setNotchState === "function") window.setNotchState("default");
             return;
         }
 
@@ -352,6 +408,7 @@ async function handleSandboxChat(sourceInput = null) {
         addChatMessage(msg, "assistant");
         if (fromFloatChat) addFloatHarnessMessage(msg, "assistant");
         setStatus("Proxy unreachable.", "failed");
+        if (typeof window.setNotchState === "function") window.setNotchState("default");
     }
 }
 
@@ -445,8 +502,10 @@ function updateSessionTotals() {
         totalsDiv = document.createElement("div");
         totalsDiv.id = "session-totals-block";
         totalsDiv.style.cssText = "font-size: 11px; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;";
+        const mount = document.getElementById("session-totals-mount");
         const tasksBody = document.querySelector(".tasks-body .activity-now");
-        if (tasksBody) tasksBody.insertBefore(totalsDiv, document.getElementById("status-display"));
+        if (mount) mount.appendChild(totalsDiv);
+        else if (tasksBody) tasksBody.insertBefore(totalsDiv, document.getElementById("status-display"));
     }
     totalsDiv.innerHTML = `
         <div><strong>Actions:</strong> ${sessionStats.actionsRun}</div>
@@ -480,11 +539,15 @@ function exportSessionReport() {
 
 // ── Tab Switching ────────────────────────────────────────────────────────────
 window.switchPage = function(pageId) {
+    if (typeof window.applyPremiumTab === "function") {
+        window.applyPremiumTab(pageId);
+        return;
+    }
     const tabs = document.querySelectorAll(".tab");
     tabs.forEach(t => t.classList.remove("active"));
     const activeTab = document.querySelector(`.tab[onclick="switchPage('${pageId}')"]`);
     if (activeTab) activeTab.classList.add("active");
-    const pages = ["page-session", "page-tasks", "page-actions"];
+    const pages = ["page-session", "page-tasks", "page-actions", "page-assistants"];
     pages.forEach(p => {
         const el = document.getElementById(p);
         if (el) {

@@ -190,6 +190,65 @@ tests/phase_d_slice5_eval.py    ← D41–D50 (never-do; includes Slice 4 + Phas
 
 ---
 
+## BACKUP CODING / LIMIT EXHAUSTED PROTOCOL
+
+Use this when Claude Code session limits are exhausted and ChatGPT, Codex, or another assistant must continue the current build.
+
+### Required context before backup coding begins
+
+Paste ALL of the following into the backup session — do not skip items:
+
+1. **Current build name** — e.g. `"Build 7 — Creative Critic v1"`
+2. **Locked builds** — full locked-slice table from `tmp/BUILD_PHASES.md`
+3. **Claude's last output** — exact final message before the session ended
+4. **`git status --short`** — which files are modified / untracked
+5. **`git diff`** — exact diff of all uncommitted changes
+6. **Failing test output** — full `python3 tests/phase_d_sliceNN_eval.py` stdout if tests were failing (or "no failures")
+7. **Relevant file sections** — paste the specific function(s) being edited if the diff alone is ambiguous
+8. **Graphify report** *(optional)* — `graphify-out/GRAPH_REPORT.md` if the task requires tracing call paths across multiple files
+
+### Backup assistant rules
+
+- Do not invent repo structure. Work only from actual files, diffs, and test output provided.
+- Ask for any missing context before writing a patch.
+- Do not change scope. Build only what was already in progress.
+- Do not touch protected files (see list below) unless they are explicitly named in the current build spec.
+- Preserve all locked builds. Do not modify any PASS/LOCKED slice's code or tests.
+- Write minimal patches only — targeted edits, not broad rewrites.
+- Add or update tests only for the current slice.
+- Do not mix in any of the following unless it is the explicitly approved current build:
+  - Conductor Bridge / `conductor_bridge.py`
+  - Knowledge Brain / RAG (`rag/*`)
+  - Premium UI or CoProducer translation layer
+  - Auto Execute path
+  - Web search / current info features
+  - PluginBridge
+  - Operator Cards v2
+
+### Graphify usage
+
+- Graphify is allowed as a **build/research helper** to understand call paths, file relationships, and which tests cover a given module.
+- Graphify is **not** a Conductor runtime dependency. Do not add any Graphify import or reference to production code.
+- Use `graphify-out/GRAPH_REPORT.md` to trace which files are used by a module before editing it.
+
+### Handoff format — fill this in when Claude stops
+
+```
+Build:               [e.g. Build 7 — Creative Critic v1]
+Last completed step: [e.g. "Added call_creative_critic(); edited _handle_orchestrate explorer branch"]
+Files changed:       [each file + one-line summary of what changed]
+Tests run:           [suite name + section count + PASS/FAIL for each]
+Current failure:     [exact test output, or "none — all passing"]
+Next intended edit:  [exact function / file / line Claude would have touched next]
+Do-not-touch list:   [files explicitly out of scope for this build]
+```
+
+### Recovery rule
+
+If a backup assistant edits any production code (not tests only), Codex must perform a full slice audit before that slice is marked PASS/LOCKED. Log the audit result in `project.md` under a new Audit section.
+
+---
+
 ## FILES/AREAS TO BE CAREFUL WITH
 
 **`rag/routed_retriever.py`**

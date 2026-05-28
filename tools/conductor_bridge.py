@@ -561,8 +561,16 @@ class ConductorHandler(BaseHTTPRequestHandler):
         # Read-only live snapshot of Ableton session state via TCP 16619.
         # Uses ableton_execute() (v2 flat protocol) — no new adapter.
         # state_completeness tells callers exactly what is/isn't available.
-        # Clips, devices, and routing are NOT read — marked "not_available_v1"
-        # so callers never mistake absent data for empty data.
+        #
+        # v1.5 additions (all best-effort, failures never block the response):
+        #   • device/plugin names per track and return track (names only)
+        #   • selected device if view is readable
+        #   • is_group_track / in_group flags per track (from main eval)
+        #   • clip presence count per track (no content, no MIDI, no waveform)
+        #   • active send count per track (count only, no levels)
+        #
+        # Calls 3–6 are wrapped in try/except Exception so any failure —
+        # including StopIteration from exhausted test mocks — is silent.
         elif path == "/session/state":
             if not ableton_connected():
                 return self._send_json({
@@ -571,7 +579,7 @@ class ConductorHandler(BaseHTTPRequestHandler):
                     "error":            "Ableton not connected",
                 }, 503)
 
-            # Single eval expression — all reliable state in one TCP round-trip.
+            # ── Call 1: Main state (v1 baseline + v1.5 group flags) ───────────
             _main_code = (
                 "{"
                 "'tempo': song.tempo, "
@@ -582,10 +590,13 @@ class ConductorHandler(BaseHTTPRequestHandler):
                 "'tracks': [{"
                     "'index': i, "
                     "'name': t.name, "
-                    "'type': 'midi' if getattr(t, 'has_midi_input', False) else ('audio' if getattr(t, 'has_audio_input', False) else 'unknown'), "
+                    "'type': 'midi' if getattr(t, 'has_midi_input', False) "
+                        "else ('audio' if getattr(t, 'has_audio_input', False) else 'unknown'), "
                     "'muted': bool(t.mute), "
                     "'soloed': bool(getattr(t, 'solo', False)), "
-                    "'arm': bool(getattr(t, 'arm', False))"
+                    "'arm': bool(getattr(t, 'arm', False)), "
+                    "'is_group_track': bool(getattr(t, 'is_foldable', False)), "
+                    "'in_group': bool(getattr(t, 'is_grouped', False))"
                 "} for i, t in enumerate(song.tracks)], "
                 "'return_tracks': [{"
                     "'index': i, "
@@ -611,7 +622,7 @@ class ConductorHandler(BaseHTTPRequestHandler):
                     "error":            "Unexpected LOM response — state was not a dict",
                 }, 502)
 
-            # Selected track — best-effort via exec (try/except inside LOM).
+            # ── Call 2: Selected track — unchanged from v1 ────────────────────
             # Must never raise 500: if this read fails, selected_track = null.
             _sel_code = (
                 "try:\n"
@@ -623,6 +634,108 @@ class ConductorHandler(BaseHTTPRequestHandler):
             sel_raw   = (sel_resp.get("data") or {}).get("result") if sel_resp.get("ok") else None
             selected_track = sel_raw if isinstance(sel_raw, str) else None
 
+            # ── Call 3: Selected device — best-effort ─────────────────────────
+            selected_device = None
+            try:
+                _sel_dev_code = (
+                    "try:\n"
+                    "    _sd = song.view.selected_track.view.selected_device\n"
+                    "    result = _sd.name if _sd else None\n"
+                    "except Exception:\n"
+                    "    result = None\n"
+                )
+                _sdr     = ableton_execute(_sel_dev_code)
+                _sdr_raw = (_sdr.get("data") or {}).get("result") if _sdr.get("ok") else None
+                selected_device = _sdr_raw if isinstance(_sdr_raw, str) else None
+            except Exception:
+                selected_device = None
+
+            # ── Call 4: Device names — tracks + return tracks ─────────────────
+            dev_ok      = False
+            track_devs  = {}
+            return_devs = {}
+            try:
+                _dev_code = (
+                    "try:\n"
+                    "    result = {\n"
+                    "        'tracks':  {t.name: [d.name for d in t.devices]\n"
+                    "                    for t in song.tracks},\n"
+                    "        'returns': {t.name: [d.name for d in t.devices]\n"
+                    "                    for t in song.return_tracks},\n"
+                    "    }\n"
+                    "except Exception:\n"
+                    "    result = None\n"
+                )
+                _devr      = ableton_execute(_dev_code)
+                _devr_data = (_devr.get("data") or {}).get("result") if _devr.get("ok") else None
+                if isinstance(_devr_data, dict):
+                    dev_ok      = True
+                    track_devs  = _devr_data.get("tracks",  {}) or {}
+                    return_devs = _devr_data.get("returns", {}) or {}
+            except Exception:
+                dev_ok = False
+
+            # ── Call 5: Clip counts (presence only — no content, no MIDI) ─────
+            clip_ok   = False
+            clip_data = {}
+            try:
+                _clip_code = (
+                    "try:\n"
+                    "    result = {t.name: sum(1 for s in t.clip_slots if s.has_clip)\n"
+                    "              for t in song.tracks}\n"
+                    "except Exception:\n"
+                    "    result = None\n"
+                )
+                _clipr      = ableton_execute(_clip_code)
+                _clipr_data = (_clipr.get("data") or {}).get("result") if _clipr.get("ok") else None
+                if isinstance(_clipr_data, dict):
+                    clip_ok   = True
+                    clip_data = _clipr_data
+            except Exception:
+                clip_ok = False
+
+            # ── Call 6: Send activity (active send count — no levels) ─────────
+            send_ok   = False
+            send_data = {}
+            try:
+                _send_code = (
+                    "try:\n"
+                    "    result = {t.name: sum(1 for s in t.mixer_device.sends\n"
+                    "                         if float(s.value) > 0.001)\n"
+                    "              for t in song.tracks}\n"
+                    "except Exception:\n"
+                    "    result = None\n"
+                )
+                _sendr      = ableton_execute(_send_code)
+                _sendr_data = (_sendr.get("data") or {}).get("result") if _sendr.get("ok") else None
+                if isinstance(_sendr_data, dict):
+                    send_ok   = True
+                    send_data = _sendr_data
+            except Exception:
+                send_ok = False
+
+            # ── Merge v1.5 fields into track list ────────────────────────────
+            tracks_out = []
+            for _t in state.get("tracks", []):
+                _tname = _t.get("name", "")
+                _t_out = dict(_t)
+                if dev_ok and _tname in track_devs:
+                    _t_out["devices"] = track_devs[_tname]
+                if clip_ok and _tname in clip_data:
+                    _t_out["clip_count"] = clip_data[_tname]
+                if send_ok and _tname in send_data:
+                    _t_out["active_send_count"] = send_data[_tname]
+                tracks_out.append(_t_out)
+
+            # ── Merge device names into return track list ─────────────────────
+            returns_out = []
+            for _r in state.get("return_tracks", []):
+                _rname = _r.get("name", "")
+                _r_out = dict(_r)
+                if dev_ok and _rname in return_devs:
+                    _r_out["devices"] = return_devs[_rname]
+                returns_out.append(_r_out)
+
             return self._send_json({
                 "ok":               True,
                 "ableton_connected": True,
@@ -632,16 +745,29 @@ class ConductorHandler(BaseHTTPRequestHandler):
                 "playing":          state.get("playing"),
                 "record":           state.get("record"),
                 "selected_track":   selected_track,
-                "tracks":           state.get("tracks", []),
-                "return_tracks":    state.get("return_tracks", []),
+                "selected_device":  selected_device,
+                "tracks":           tracks_out,
+                "return_tracks":    returns_out,
                 "state_completeness": {
-                    "tracks":       "full",
-                    "return_tracks": "full",
-                    "tempo":        "full",
-                    "selected_track": "best_effort",
-                    "clips":        "not_available_v1",
-                    "devices":      "not_available_v1",
-                    "routing":      "not_available_v1",
+                    # ── v1 fields — unchanged (D113 regression keys preserved) ─
+                    "tempo":            "full",
+                    "time_signature":   "full",
+                    "playing":          "full",
+                    "record":           "full",
+                    "tracks":           "full",
+                    "return_tracks":    "full",
+                    "selected_track":   "best_effort",
+                    # v1 legacy not-available markers — kept for backward compat
+                    "clips":            "not_available_v1",
+                    "devices":          "not_available_v1",
+                    "routing":          "not_available_v1",
+                    # ── v1.5 additions ────────────────────────────────────────
+                    "selected_device":     "best_effort",
+                    "group_structure":     "best_effort",
+                    "track_device_names":  "best_effort" if dev_ok else "unavailable",
+                    "return_device_names": "best_effort" if dev_ok else "unavailable",
+                    "clip_counts":         "best_effort" if clip_ok else "unavailable",
+                    "send_activity":       "best_effort" if send_ok else "unavailable",
                 },
             })
 

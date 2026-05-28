@@ -35,6 +35,9 @@
     --fc-glow-a2: 0.38;
     --fc-glow-a3: 0.22;
     --fc-glow-a4: 0.14;
+    --hardware-notch-width: 120px;
+    --hardware-notch-guard: 12px;
+    --notch-dead-zone: calc(var(--hardware-notch-width) + (var(--hardware-notch-guard) * 2));
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,10 +47,10 @@
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
     background:
-      radial-gradient(circle at 18% 14%, rgba(98,142,255,0.20) 0 8%, transparent 23%),
-      radial-gradient(circle at 82% 70%, rgba(120,74,255,0.16) 0 10%, transparent 28%),
-      radial-gradient(circle at 50% 105%, rgba(36,211,148,0.10) 0 8%, transparent 34%),
-      linear-gradient(135deg, #080a10 0%, #0d1119 45%, #030407 100%);
+      radial-gradient(circle at 18% 12%, rgba(130,166,230,0.28) 0 9%, transparent 25%),
+      radial-gradient(circle at 82% 68%, rgba(158,137,220,0.24) 0 11%, transparent 30%),
+      radial-gradient(circle at 48% 104%, rgba(91,196,169,0.15) 0 10%, transparent 34%),
+      linear-gradient(135deg, #eef2f7 0%, #cdd7e6 46%, #9daec5 100%);
     color: var(--text-primary);
   }
 
@@ -64,8 +67,11 @@
     left: 0;
     right: 0;
     height: 38px;
-    background: rgba(0,0,0,0.94);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(224,228,235,0.86);
+    border-bottom: 1px solid rgba(58,66,79,0.16);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.58) inset;
+    backdrop-filter: blur(18px) saturate(1.12);
+    -webkit-backdrop-filter: blur(18px) saturate(1.12);
     z-index: 20;
   }
 
@@ -78,7 +84,7 @@
     gap: 14px;
     padding: 0 16px;
     font-size: 12px;
-    color: rgba(255,255,255,0.82);
+    color: rgba(18,24,34,0.78);
     letter-spacing: 0.01em;
     user-select: none;
     pointer-events: none;
@@ -87,6 +93,115 @@
   .menu-left { left: 0; }
   .menu-right { right: 0; gap: 10px; }
   .menu-apple { font-size: 14px; }
+
+  .meter-strip {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px) scale(0.99);
+    width: min(1120px, calc(100vw - 24px));
+    height: 38px;
+    z-index: 26;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--notch-dead-zone) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    padding: 0 24px;
+    border: 1px solid rgba(255,255,255,0.075);
+    border-top: 0;
+    border-radius: 0 0 11px 11px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
+      rgba(0,0,0,0.93);
+    box-shadow:
+      0 8px 22px rgba(0,0,0,0.30),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    color: rgba(237,241,247,0.86);
+    font-size: 10.5px;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(18px) saturate(1.12);
+    -webkit-backdrop-filter: blur(18px) saturate(1.12);
+    transition:
+      opacity 220ms ease,
+      transform 260ms cubic-bezier(0.16,1,0.3,1),
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+  .meter-strip.compact {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  .meter-strip-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    min-width: 0;
+  }
+  .meter-strip-left {
+    grid-column: 1;
+    justify-self: end;
+    justify-content: flex-end;
+  }
+  .meter-strip-right {
+    grid-column: 3;
+    justify-self: start;
+    justify-content: flex-start;
+  }
+  .meter-strip-dead-zone {
+    grid-column: 2;
+    width: var(--notch-dead-zone);
+    height: 100%;
+    pointer-events: none;
+  }
+  .meter-strip-label {
+    color: rgba(163,173,189,0.74);
+    font-size: 9px;
+    font-weight: 780;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .meter-strip-value {
+    color: rgba(237,241,247,0.9);
+    font-variant-numeric: tabular-nums;
+  }
+  .meter-strip-value.safe {
+    color: #78d997;
+  }
+  .meter-strip-spectrum {
+    display: inline-grid;
+    grid-template-columns: repeat(28, 4px);
+    align-items: end;
+    gap: 2.5px;
+    height: 14px;
+  }
+  .meter-strip-block {
+    display: block;
+    width: 4px;
+    background: linear-gradient(180deg, rgba(120,217,151,0.94), rgba(120,217,151,0.48));
+    box-shadow: 0 0 7px rgba(120,217,151,0.12);
+  }
+  .meter-strip-block.peak {
+    background: linear-gradient(180deg, rgba(227,189,97,0.94), rgba(227,189,97,0.48));
+    box-shadow: 0 0 7px rgba(227,189,97,0.12);
+  }
+  .meter-strip-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .meter-strip-output {
+    display: inline-grid;
+    grid-template-columns: repeat(22, 4px);
+    align-items: end;
+    gap: 2.5px;
+    height: 13px;
+  }
 
   .notch-zone {
     position: absolute;
@@ -101,6 +216,23 @@
 
   .notch-zone.shortcut-voice {
     width: 340px;
+  }
+  .notch-zone.voice-surface {
+    width: calc(var(--voice-notch-width, 340px) + 48px);
+  }
+  .notch-zone.voice-listening,
+  .notch-zone.voice-thinking,
+  .notch-zone.voice-applying {
+    --voice-notch-width: 340px;
+  }
+  .notch-zone.voice-done {
+    --voice-notch-width: 300px;
+  }
+  .notch-zone.voice-cant-verify {
+    --voice-notch-width: 388px;
+  }
+  .notch-zone.meter-surface {
+    width: 520px;
   }
 
   .notch {
@@ -168,6 +300,43 @@
       0 10px 22px rgba(0,0,0,0.52),
       0 0 22px rgba(174,82,255,0.28);
   }
+  .notch.voice-surface {
+    width: var(--voice-notch-width, 340px);
+    height: 34px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 40%),
+      #000;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.045),
+      0 12px 28px rgba(0,0,0,0.50),
+      inset 0 -1px 0 rgba(255,255,255,0.035);
+  }
+  .notch.voice-listening,
+  .notch.voice-thinking,
+  .notch.voice-applying {
+    --voice-notch-width: 340px;
+  }
+  .notch.voice-done {
+    --voice-notch-width: 300px;
+  }
+  .notch.voice-cant-verify {
+    --voice-notch-width: 388px;
+  }
+  .notch.meter-surface {
+    width: 456px;
+    height: 34px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 38%),
+      #000;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.045),
+      0 12px 28px rgba(0,0,0,0.48),
+      inset 0 -1px 0 rgba(255,255,255,0.035);
+  }
 
   .notch.shortcut-voice::before,
   .notch.shortcut-voice::after {
@@ -193,6 +362,15 @@
   }
   .notch.thinking {
     box-shadow: 0 0 18px rgba(110,160,255,0.34), 0 0 6px rgba(110,160,255,0.22);
+  }
+  .notch.applying {
+    box-shadow: 0 0 18px rgba(52,211,153,0.30), 0 0 6px rgba(52,211,153,0.18);
+  }
+  .notch.done {
+    box-shadow: 0 0 14px rgba(52,211,153,0.22);
+  }
+  .notch.cant-verify {
+    box-shadow: 0 0 16px rgba(251,191,36,0.24), 0 0 6px rgba(251,191,36,0.14);
   }
 
   @keyframes shortcutGlowSweep {
@@ -225,13 +403,187 @@
     pointer-events: auto;
   }
   .notch-label {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10.5px;
+    font-weight: 650;
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
   .listening-label { color: #FF8C3A; }
   .thinking-label  { color: #A855F7; }
+  .applying-label { color: #6ee7b7; }
+  .done-label { color: #86efac; }
+  .verify-label { color: #fcd34d; }
+  .voice-state {
+    --voice-color: rgba(237,241,247,0.78);
+    --voice-glow: rgba(255,255,255,0.16);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--notch-dead-zone) minmax(0, 1fr);
+    column-gap: 8px;
+    width: 100%;
+    padding: 0 16px;
+    transform: scale(1);
+  }
+  .voice-state.active {
+    transform: scale(1);
+  }
+  .voice-state.listening-state {
+    --voice-color: #ff9a4c;
+    --voice-glow: rgba(255,154,76,0.34);
+  }
+  .voice-state.thinking-state {
+    --voice-color: #c7a7ff;
+    --voice-glow: rgba(199,167,255,0.30);
+  }
+  .voice-state.applying-state {
+    --voice-color: #6ee7b7;
+    --voice-glow: rgba(110,231,183,0.28);
+  }
+  .voice-state.done-state {
+    --voice-color: #86efac;
+    --voice-glow: rgba(134,239,172,0.24);
+  }
+  .voice-state.verify-state {
+    --voice-color: #fcd34d;
+    --voice-glow: rgba(252,211,77,0.28);
+  }
+  .voice-mark {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--voice-color);
+    box-shadow: 0 0 12px var(--voice-glow);
+    flex-shrink: 0;
+  }
+  .voice-state .notch-label {
+    color: var(--voice-color);
+  }
+  .voice-content {
+    grid-column: 1;
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .studio-meter {
+    --meter-color: #63d68a;
+    --meter-glow: rgba(99,214,138,0.28);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--notch-dead-zone) minmax(0, 1fr);
+    column-gap: 8px;
+    width: 100%;
+    color: rgba(237,241,247,0.82);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    white-space: nowrap;
+    transform: scale(1);
+    transform-origin: center;
+    padding: 0 14px;
+  }
+  .notch-dead-zone {
+    grid-column: 2;
+    width: var(--notch-dead-zone);
+    height: 100%;
+    pointer-events: none;
+  }
+  .studio-meter.active {
+    transform: scale(1);
+  }
+  .studio-meter.level-peaking {
+    --meter-color: #f4bf4f;
+    --meter-glow: rgba(244,191,79,0.30);
+  }
+  .studio-meter.level-clipping {
+    --meter-color: #ff5f57;
+    --meter-glow: rgba(255,95,87,0.32);
+  }
+  .meter-channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .meter-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+  .meter-left {
+    grid-column: 1;
+    justify-self: end;
+  }
+  .meter-right {
+    grid-column: 3;
+    justify-self: start;
+  }
+  .meter-letter {
+    color: rgba(237,241,247,0.62);
+    font-size: 9px;
+    font-weight: 700;
+    margin-right: 1px;
+  }
+  .meter-bars {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5px;
+    height: 10px;
+  }
+  .meter-bar {
+    width: 6px;
+    height: 8px;
+    border-radius: 1.5px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--meter-color) 92%, white 8%), var(--meter-color));
+    box-shadow: 0 0 7px var(--meter-glow);
+    opacity: 0.24;
+    transform-origin: bottom;
+    transition:
+      height 520ms cubic-bezier(0.16,1,0.3,1),
+      opacity 420ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+  .meter-value {
+    min-width: 34px;
+    text-align: left;
+    color: rgba(237,241,247,0.76);
+    font-variant-numeric: tabular-nums;
+  }
+  .meter-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--meter-color);
+  }
+  .meter-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--meter-color);
+    box-shadow: 0 0 9px var(--meter-glow);
+  }
+  .notch.audio-playing .studio-meter.active .meter-bar {
+    opacity: 0.86;
+    animation: meterActivity 980ms ease-in-out infinite alternate;
+  }
+  .notch.audio-playing .studio-meter.active .meter-bar:nth-child(2n) { animation-duration: 860ms; }
+  .notch.audio-playing .studio-meter.active .meter-bar:nth-child(3n) { animation-duration: 1120ms; }
+  .notch.audio-playing .studio-meter.active .meter-bar:nth-child(4n) { animation-delay: 120ms; }
+  .notch.audio-silent .studio-meter.active {
+    opacity: 0;
+  }
+  .notch.audio-silent .studio-meter.active .meter-bar {
+    opacity: 0;
+    animation: none;
+    box-shadow: none;
+  }
+  body.panel-open .studio-meter.active {
+    opacity: 0;
+  }
+  @keyframes meterActivity {
+    0% { transform: scaleY(0.72); filter: brightness(0.92); }
+    100% { transform: scaleY(1.08); filter: brightness(1.08); }
+  }
 
   /* ── WAVE BARS ── */
   .wave-bars {
@@ -317,15 +669,29 @@
 
   .panel {
     width: var(--panel-width);
-    background: linear-gradient(180deg, rgba(12,15,20,var(--panel-alpha)) 0%, rgba(7,9,13,var(--panel-alpha)) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.98) 0 34px, rgba(12,15,20,var(--panel-alpha)) 34px, rgba(7,9,13,var(--panel-alpha)) 100%);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-top-color: rgba(255,255,255,0.035);
     border-radius: 0 0 15px 15px;
     box-shadow:
-      0 0 0 0.5px rgba(255,255,255,0.035),
-      0 18px 52px rgba(0,0,0,0.58),
-      0 2px 12px rgba(0,0,0,0.32);
+      0 0 0 0.5px rgba(255,255,255,0.028),
+      0 22px 58px rgba(0,0,0,0.62),
+      0 2px 10px rgba(0,0,0,0.36);
     overflow: hidden;
     position: relative;
+  }
+  .panel.chat-focus {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.99) 0 34px, rgba(7,9,13,var(--panel-alpha)) 34px, rgba(5,6,9,var(--panel-alpha)) 100%);
+  }
+  .panel.chat-focus .top-nav,
+  .panel.chat-focus .page,
+  .panel.chat-focus .settings-page,
+  .panel.chat-focus .integrations-page,
+  .panel.chat-focus .theme-page,
+  .panel.chat-focus .theme-customization-page {
+    display: none !important;
   }
 
   .panel::before {
@@ -365,17 +731,17 @@
   .top-nav {
     position: relative;
     z-index: 1;
-    height: 44px;
-    padding: 0 14px;
+    height: 70px;
+    padding: 34px 14px 8px;
     background: rgba(7,9,13,var(--panel-chrome-alpha));
     backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(255,255,255,0.065);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     flex-shrink: 0;
   }
-  .tab-group { display: flex; gap: 6px; }
+  .tab-group { display: flex; gap: 6px; justify-content: center; min-width: 0; }
   .tab {
     padding: 5px 12px;
     border-radius: 8px;
@@ -395,8 +761,48 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
   .tab:hover:not(.active) { color: var(--text-secondary); }
+  .tab.auto-exec-confirm {
+    animation: tasksAutoExecGlow 1450ms cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes tasksAutoExecGlow {
+    0% {
+      border-color: rgba(120,217,151,0);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 rgba(120,217,151,0);
+      background: rgba(255,255,255,0.075);
+    }
+    38% {
+      border-color: rgba(120,217,151,0.42);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 0 0 1px rgba(120,217,151,0.10),
+        0 0 18px rgba(120,217,151,0.24),
+        0 0 34px rgba(120,217,151,0.10);
+      background: rgba(120,217,151,0.095);
+    }
+    68% {
+      border-color: rgba(120,217,151,0.28);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 0 0 1px rgba(120,217,151,0.07),
+        0 0 14px rgba(120,217,151,0.16),
+        0 0 28px rgba(120,217,151,0.07);
+      background: rgba(120,217,151,0.06);
+    }
+    100% {
+      border-color: rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 rgba(120,217,151,0);
+      background: rgba(255,255,255,0.075);
+    }
+  }
 
-  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .nav-right {
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .status-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--success);
@@ -434,6 +840,152 @@
   }
 
   .session-body { padding: 0; flex: 1; display: flex; flex-direction: column; }
+  .studio-overview {
+    padding: 14px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .studio-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .studio-info-row {
+    min-width: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .studio-info-row.full {
+    grid-column: 1 / -1;
+  }
+  .studio-info-label {
+    margin-bottom: 5px;
+    color: rgba(163,173,189,0.72);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .studio-info-value {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .studio-info-value.safe {
+    color: #78d997;
+  }
+  .studio-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .studio-action-btn {
+    min-height: 25px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.032);
+    color: rgba(237,241,247,0.78);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 4px 9px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .studio-action-btn:hover {
+    background: rgba(255,255,255,0.055);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(237,241,247,0.92);
+  }
+  .studio-action-btn:active {
+    transform: scale(0.975);
+  }
+  .studio-ask-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 11px;
+    background: rgba(255,255,255,0.035);
+    padding: 6px 7px 6px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  }
+  .studio-ask-row.chat-attached {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+    pointer-events: none;
+    transition:
+      opacity 180ms ease,
+      transform 220ms cubic-bezier(0.16,1,0.3,1);
+  }
+  .studio-last-response {
+    display: none;
+    margin-top: -4px;
+    color: rgba(163,173,189,0.76);
+    font-size: 11px;
+    line-height: 1.45;
+    max-height: 34px;
+    overflow: hidden;
+  }
+  .studio-last-response.visible {
+    display: block;
+  }
+  .studio-ask-row:focus-within {
+    border-color: rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.048);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.035),
+      0 0 0 3px rgba(255,255,255,0.035);
+  }
+  .studio-ask-row input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .studio-ask-row input::placeholder {
+    color: rgba(163,173,189,0.66);
+  }
+  .session-dev-shell {
+    margin-top: 0;
+  }
+  .session-dev-shell > details[open] {
+    max-height: clamp(230px, 34vh, 360px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.16) transparent;
+  }
+  .session-dev-shell > details[open]::-webkit-scrollbar {
+    width: 4px;
+  }
+  .session-dev-shell > details[open]::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+  }
+  .session-dev-shell > details[open] > summary {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(16,18,24,0.98), rgba(14,16,22,0.94));
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
   .shortcut-hint {
     padding: 20px 18px 16px;
     max-height: 200px;
@@ -565,28 +1117,193 @@
     letter-spacing: 0.01em;
   }
   .quit-btn:hover { color: var(--destructive-text); }
-  .footer-actions { display: flex; align-items: center; gap: 6px; }
+  .footer-actions { display: flex; align-items: center; gap: 5px; }
   .dock-btn {
-    background: var(--surface-2);
-    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.026);
+    border: 1px solid rgba(255,255,255,0.065);
     border-radius: 7px;
-    padding: 5px 10px;
-    font-size: 11px; font-weight: 600;
-    color: var(--text-secondary);
+    padding: 4px 8px;
+    font-size: 10.5px; font-weight: 600;
+    color: rgba(163,173,189,0.86);
     cursor: pointer;
     font-family: inherit;
-    transition: background 150ms, border-color 150ms;
+    transition: background 150ms, border-color 150ms, color 150ms;
     letter-spacing: 0.01em;
   }
-  .dock-btn:hover { background: var(--surface-3); border-color: var(--border-strong); }
+  .dock-btn:hover {
+    background: rgba(255,255,255,0.055);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(237,241,247,0.88);
+  }
   .pin-btn.pinned {
     background: var(--accent-subtle);
     border-color: rgba(79,126,255,0.35);
     color: var(--accent-text);
   }
+  .has-tooltip {
+    position: relative;
+  }
+  .has-tooltip::before,
+  .has-tooltip::after {
+    position: absolute;
+    left: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(4px);
+    transition: opacity 150ms ease 720ms, transform 150ms ease 720ms;
+    z-index: 1200;
+  }
+  .has-tooltip::before {
+    content: attr(data-tooltip);
+    bottom: calc(100% + 9px);
+    width: max-content;
+    max-width: 230px;
+    padding: 6px 8px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 7px;
+    background: rgba(18,20,24,0.96);
+    color: rgba(237,241,247,0.92);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04);
+    font-size: 10.5px;
+    font-weight: 550;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .has-tooltip::after {
+    content: "";
+    bottom: calc(100% + 4px);
+    width: 8px;
+    height: 8px;
+    border-right: 1px solid rgba(255,255,255,0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    background: rgba(18,20,24,0.96);
+    transform: translateX(-50%) translateY(4px) rotate(45deg);
+  }
+  .has-tooltip:hover::before,
+  .has-tooltip:hover::after,
+  .has-tooltip:focus-visible::before,
+  .has-tooltip:focus-visible::after {
+    opacity: 1;
+  }
+  .has-tooltip:hover::before,
+  .has-tooltip:focus-visible::before {
+    transform: translateX(-50%) translateY(0);
+  }
+  .has-tooltip:hover::after,
+  .has-tooltip:focus-visible::after {
+    transform: translateX(-50%) translateY(0) rotate(45deg);
+  }
 
   /* ── ACTIVITY LOG (Tasks tab) ── */
-  .tasks-body { padding: 0 0 8px; }
+  .tasks-body { padding: 14px 16px 12px; }
+  .tasks-premium {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .tasks-section-label {
+    margin-bottom: 7px;
+    color: rgba(163,173,189,0.72);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 42px;
+    padding: 10px 11px;
+    border: 1px solid rgba(255,255,255,0.065);
+    border-radius: 9px;
+    background: rgba(255,255,255,0.028);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.022);
+  }
+  .task-row + .task-row {
+    margin-top: 7px;
+  }
+  .task-icon {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .task-icon.done {
+    color: #0b1510;
+    background: #78d997;
+    box-shadow: 0 0 12px rgba(120,217,151,0.16);
+  }
+  .task-icon.verify {
+    color: #1f1704;
+    background: #e3bd61;
+    box-shadow: 0 0 12px rgba(227,189,97,0.14);
+  }
+  .task-icon.idle {
+    background: rgba(255,255,255,0.09);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .task-copy {
+    flex: 1;
+    min-width: 0;
+  }
+  .task-title {
+    color: var(--text-primary);
+    font-size: 12.5px;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .task-sub {
+    margin-top: 2px;
+    color: rgba(163,173,189,0.78);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .task-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .task-control-chip {
+    min-height: 25px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.032);
+    color: rgba(237,241,247,0.78);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 4px 10px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease, opacity 180ms ease, transform 150ms ease;
+  }
+  .task-control-chip.label-fade {
+    opacity: 0.58;
+    transform: scale(0.985);
+  }
+  .task-control-chip:hover {
+    background: rgba(255,255,255,0.055);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(237,241,247,0.92);
+  }
+  .task-control-chip:active {
+    transform: scale(0.975);
+  }
+  .tasks-debug-shell {
+    margin: 2px 0 0;
+  }
 
   .activity-now {
     padding: 10px 16px 8px;
@@ -650,6 +1367,284 @@
   .activity-log {
     padding: 10px 16px 0;
   }
+  .harness-controls {
+    margin: 0 16px 12px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.028);
+    overflow: hidden;
+  }
+  .harness-controls-title {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 0 12px 10px;
+  }
+  .harness-controls summary {
+    cursor: pointer;
+    list-style-position: inside;
+    padding: 12px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .harness-control-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 12px 12px;
+  }
+  .harness-control {
+    min-width: 0;
+  }
+  .harness-control.full-width {
+    grid-column: 1 / -1;
+  }
+  .harness-control label {
+    display: block;
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .harness-control select {
+    width: 100%;
+    min-height: 28px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 11px;
+    padding: 4px 7px;
+  }
+  .meter-cycle-btn {
+    width: 100%;
+    min-height: 30px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 7px;
+    background: rgba(255,255,255,0.045);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+  .meter-cycle-btn:hover {
+    background: rgba(255,255,255,0.075);
+    border-color: rgba(255,255,255,0.16);
+  }
+  .context-copy {
+    padding: 0 18px 12px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .context-surface {
+    padding: 14px 16px 16px;
+    min-height: 220px;
+  }
+  .surface-title {
+    font-size: 13px;
+    font-weight: 750;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .surface-line {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 7px;
+  }
+  .surface-line:empty {
+    display: none;
+  }
+  .surface-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .surface-tile {
+    min-height: 58px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.032);
+    padding: 10px;
+  }
+  .surface-tile strong {
+    display: block;
+    font-size: 11px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .surface-tile span {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    line-height: 1.35;
+  }
+  .compact-meter-view {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .compact-meter-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .compact-meter-title {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+  .compact-meter-note {
+    color: rgba(163,173,189,0.62);
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .compact-meter-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .compact-meter-stat {
+    min-width: 0;
+    border: 1px solid rgba(255,255,255,0.065);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.028);
+    padding: 9px 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.022);
+  }
+  .compact-meter-label {
+    margin-bottom: 4px;
+    color: rgba(163,173,189,0.68);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .compact-meter-value {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .compact-meter-value.safe {
+    color: #78d997;
+  }
+  .meter-spectrum-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .meter-spectrum-card {
+    min-width: 0;
+    border: 1px solid rgba(255,255,255,0.065);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.026);
+    padding: 9px 10px 10px;
+  }
+  .meter-spectrum {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    align-items: end;
+    gap: 2px;
+    height: 34px;
+    margin-top: 8px;
+  }
+  .spectrum-block {
+    display: block;
+    min-width: 3px;
+    background: linear-gradient(180deg, rgba(120,217,151,0.92), rgba(120,217,151,0.48));
+    box-shadow: 0 0 8px rgba(120,217,151,0.12);
+  }
+  .spectrum-block.peak {
+    background: linear-gradient(180deg, rgba(227,189,97,0.92), rgba(227,189,97,0.48));
+    box-shadow: 0 0 8px rgba(227,189,97,0.12);
+  }
+  .meter-side-stat {
+    width: 118px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .clip-zero {
+    color: #78d997;
+  }
+  .meter-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .meter-action-chip {
+    min-height: 25px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.032);
+    color: rgba(237,241,247,0.78);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 4px 10px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .meter-action-chip:hover {
+    background: rgba(255,255,255,0.055);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(237,241,247,0.92);
+  }
+  .meter-action-chip:active {
+    transform: scale(0.975);
+  }
+  .harness-advanced {
+    margin: 0 12px 12px;
+    border-top: 1px solid rgba(255,255,255,0.075);
+    padding-top: 10px;
+  }
+  .harness-advanced summary {
+    cursor: pointer;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .advanced-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .advanced-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+  .advanced-row select,
+  .advanced-row button {
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    border-radius: 7px;
+    padding: 5px 8px;
+    font: inherit;
+    font-size: 11px;
+  }
+  .advanced-row button { cursor: pointer; }
   .activity-log-row {
     display: flex;
     align-items: flex-start;
@@ -1237,9 +2232,73 @@
     box-shadow: none;
     overflow: hidden;
   }
+  .panel.chat-focus .float-chat.fc-attached {
+    min-height: 248px;
+    background: rgba(7,9,13,var(--panel-alpha));
+  }
+  .panel.chat-focus .float-chat.fc-attached.fc-long-response {
+    min-height: 342px;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-header {
+    position: relative;
+    height: 28px;
+    padding: 0 10px;
+    opacity: 1;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-grip,
+  .panel.chat-focus .float-chat.fc-attached .fc-tip {
+    display: none;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-header-left::before {
+    content: "Chat";
+    color: rgba(237,241,247,0.72);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-x-btn {
+    display: flex;
+    color: rgba(237,241,247,0.42);
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-x-btn:hover {
+    background: rgba(255,255,255,0.07);
+    color: rgba(237,241,247,0.82);
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-messages {
+    min-height: 118px;
+    max-height: 152px;
+    padding: 10px 0 8px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0) 42%),
+      rgba(255,255,255,0.012);
+  }
+  .panel.chat-focus .float-chat.fc-attached.fc-long-response .fc-messages {
+    min-height: 212px;
+    max-height: 246px;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-input-row {
+    height: 44px;
+    margin: 0 10px 10px;
+    padding: 0 7px 0 10px;
+    border: 1px solid rgba(255,255,255,0.105);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.045);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.035),
+      0 8px 22px rgba(0,0,0,0.16);
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-toolbar {
+    display: none;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-actions {
+    display: none;
+  }
   /* Detached — freely floating, position set via JS */
   .float-chat.fc-detached {
     width: var(--chat-window-width);
+    min-width: 340px;
+    min-height: 260px;
     opacity: 1;
     pointer-events: auto;
     clip-path: inset(0 0 0 0 round 16px);
@@ -1251,6 +2310,18 @@
     box-shadow: 0 18px 56px rgba(0,0,0,0.64), inset 0 1px 0 rgba(255,255,255,0.045);
     overflow: visible;
     /* left / top / transform overridden by JS */
+  }
+  .float-chat.fc-detached.has-resized {
+    display: flex;
+    flex-direction: column;
+  }
+  .float-chat.fc-detached.has-resized .fc-messages {
+    flex: 1;
+    max-height: none;
+  }
+  .float-chat.fc-resizing {
+    transition: none !important;
+    user-select: none;
   }
   .float-chat.fc-pulling-out {
     transform: translateY(-2px) scale(1.012) !important;
@@ -1399,6 +2470,43 @@
   }
   /* Blue = "return to notch" (not close) */
   .fc-x-btn:hover { background: rgba(77,142,255,0.12); color: rgba(77,142,255,0.85); }
+  .fc-resize-handle {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 18px;
+    height: 18px;
+    display: none;
+    cursor: nwse-resize;
+    opacity: 0.28;
+    z-index: 8;
+  }
+  .float-chat.fc-detached .fc-resize-handle {
+    display: block;
+  }
+  .float-chat.fc-detached .fc-resize-handle:hover,
+  .float-chat.fc-resizing .fc-resize-handle {
+    opacity: 0.62;
+  }
+  .fc-resize-handle::before,
+  .fc-resize-handle::after {
+    content: "";
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 9px;
+    height: 9px;
+    border-right: 1.5px solid rgba(237,241,247,0.55);
+    border-bottom: 1.5px solid rgba(237,241,247,0.55);
+    border-radius: 1px;
+  }
+  .fc-resize-handle::after {
+    right: 8px;
+    bottom: 8px;
+    width: 5px;
+    height: 5px;
+    opacity: 0.7;
+  }
   /* messages */
   .fc-messages {
     max-height: 240px; overflow-y: auto;
@@ -1418,6 +2526,26 @@
   .fc-ai-msg {
     padding: 6px 16px 2px;
     font-size: 13.5px; color: #f0f2f8; line-height: 1.65;
+  }
+  .fc-thinking-msg {
+    margin: 6px 14px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.026);
+    color: rgba(163,173,189,0.82);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .fc-thinking-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: rgba(120,217,151,0.78);
+    box-shadow: 0 0 10px rgba(120,217,151,0.18);
+    vertical-align: 1px;
   }
   .fc-actions {
     display: flex; align-items: center; gap: 8px;
@@ -1462,6 +2590,9 @@
     font-family: inherit; font-size: 13.5px; color: #f5f5f7;
     caret-color: rgba(110,160,255,0.9);
   }
+  .panel.chat-focus .float-chat.fc-attached .fc-query-input {
+    font-size: 13px;
+  }
   .fc-query-input::placeholder { color: rgba(255,255,255,0.24); }
   .fc-send-btn {
     width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
@@ -1469,6 +2600,12 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; color: #050608; font-size: 14px;
     font-family: inherit; user-select: none; transition: all 150ms;
+  }
+  .panel.chat-focus .float-chat.fc-attached .fc-send-btn {
+    width: 27px;
+    height: 27px;
+    border-radius: 8px;
+    box-shadow: 0 5px 14px rgba(0,0,0,0.24);
   }
   .fc-send-btn:hover { background: #ffffff; border-color: rgba(255,255,255,0.24); color: #050608; }
   .fc-send-btn:active { transform: scale(0.90); }
@@ -1534,6 +2671,175 @@
   .fc-src-tick { font-size: 11px; color: #7aacff; opacity: 0; }
   .fc-src-item.sel .fc-src-tick { opacity: 1; }
   .fc-src-div { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+
+  /* Detached floating chat premium pass */
+  .float-chat.fc-detached {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012) 18%, rgba(5,7,10,0) 42%),
+      rgba(7,8,11,var(--chat-window-alpha));
+    border-color: rgba(255,255,255,0.105);
+    border-radius: 18px;
+    box-shadow:
+      0 28px 74px rgba(0,0,0,0.62),
+      0 0 0 1px rgba(255,255,255,0.026),
+      inset 0 1px 0 rgba(255,255,255,0.07);
+    overflow: hidden;
+  }
+  .float-chat.fc-detached.fc-analyze-glow {
+    background:
+      radial-gradient(120% 95% at 18% 8%, rgba(227,189,97,0.14), rgba(227,189,97,0.045) 30%, rgba(227,189,97,0) 62%),
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012) 18%, rgba(5,7,10,0) 42%),
+      rgba(7,8,11,var(--chat-window-alpha));
+    border-color: rgba(227,189,97,0.22);
+    box-shadow:
+      0 28px 74px rgba(0,0,0,0.62),
+      0 0 0 1px rgba(227,189,97,0.075),
+      0 0 34px rgba(227,189,97,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      inset 0 0 42px rgba(227,189,97,0.035);
+  }
+  .float-chat.fc-detached.fc-auto-glow {
+    background:
+      radial-gradient(120% 95% at 82% 10%, rgba(120,217,151,0.16), rgba(120,217,151,0.052) 30%, rgba(120,217,151,0) 62%),
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012) 18%, rgba(5,7,10,0) 42%),
+      rgba(7,8,11,var(--chat-window-alpha));
+    border-color: rgba(120,217,151,0.24);
+    box-shadow:
+      0 28px 74px rgba(0,0,0,0.62),
+      0 0 0 1px rgba(120,217,151,0.08),
+      0 0 36px rgba(120,217,151,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      inset 0 0 44px rgba(120,217,151,0.04);
+  }
+  .float-chat.fc-detached.fc-analyze-glow.fc-auto-glow {
+    background:
+      radial-gradient(115% 95% at 18% 8%, rgba(227,189,97,0.13), rgba(227,189,97,0.04) 28%, rgba(227,189,97,0) 60%),
+      radial-gradient(115% 95% at 82% 10%, rgba(120,217,151,0.15), rgba(120,217,151,0.048) 30%, rgba(120,217,151,0) 62%),
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012) 18%, rgba(5,7,10,0) 42%),
+      rgba(7,8,11,var(--chat-window-alpha));
+    border-color: rgba(178,211,132,0.24);
+    box-shadow:
+      0 28px 74px rgba(0,0,0,0.62),
+      0 0 0 1px rgba(178,211,132,0.075),
+      0 0 36px rgba(120,217,151,0.10),
+      0 0 30px rgba(227,189,97,0.075),
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      inset 0 0 44px rgba(120,217,151,0.032);
+  }
+  .float-chat.fc-detached .fc-header {
+    height: 36px;
+    padding: 0 10px 0 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0));
+  }
+  .float-chat.fc-detached .fc-header-left::before {
+    content: "Conductor";
+    color: rgba(237,241,247,0.78);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.01em;
+  }
+  .float-chat.fc-detached .fc-grip,
+  .float-chat.fc-detached .fc-tip {
+    display: none;
+  }
+  .float-chat.fc-detached .fc-x-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    color: rgba(237,241,247,0.42);
+  }
+  .float-chat.fc-detached .fc-x-btn:hover {
+    background: rgba(255,255,255,0.075);
+    color: rgba(237,241,247,0.82);
+  }
+  .float-chat.fc-detached .fc-messages {
+    margin: 8px 8px 0;
+    padding: 8px 0;
+    border: 1px solid rgba(255,255,255,0.045);
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0) 54%),
+      rgba(255,255,255,0.012);
+  }
+  .float-chat.fc-detached .fc-user-msg {
+    margin-right: 10px;
+    background: rgba(120,217,151,0.105);
+    border-color: rgba(120,217,151,0.18);
+    color: rgba(237,241,247,0.88);
+  }
+  .float-chat.fc-detached .fc-ai-msg {
+    color: rgba(237,241,247,0.9);
+  }
+  .float-chat.fc-detached .fc-input-row {
+    height: 50px;
+    margin: 8px;
+    padding: 0 8px 0 10px;
+    border: 1px solid rgba(255,255,255,0.095);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+  }
+  .float-chat.fc-detached .fc-logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: rgba(120,217,151,0.065);
+    border-color: rgba(120,217,151,0.14);
+  }
+  .float-chat.fc-detached .fc-query-input {
+    font-size: 13px;
+    color: rgba(245,247,251,0.92);
+  }
+  .float-chat.fc-detached .fc-query-input::placeholder {
+    color: rgba(163,173,189,0.58);
+  }
+  .float-chat.fc-detached .fc-send-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    box-shadow: 0 7px 18px rgba(0,0,0,0.26);
+  }
+  .float-chat.fc-detached .fc-toolbar {
+    height: 36px;
+    margin: 0 8px 8px;
+    padding: 0 4px;
+    border: 1px solid rgba(255,255,255,0.055);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.022);
+  }
+  .float-chat.fc-detached .fc-tool,
+  .float-chat.fc-detached .fc-tool-right {
+    min-height: 26px;
+    border-radius: 9px;
+    color: rgba(163,173,189,0.72);
+    font-size: 11px;
+    font-weight: 650;
+  }
+  .float-chat.fc-detached .fc-tool:hover,
+  .float-chat.fc-detached .fc-tool-right:hover {
+    background: rgba(255,255,255,0.055);
+    color: rgba(237,241,247,0.84);
+  }
+  .float-chat.fc-detached .fc-tool.on {
+    color: rgba(120,217,151,0.92);
+    background: rgba(120,217,151,0.07);
+  }
+  .float-chat.fc-detached .fc-tool.voice-on,
+  .float-chat.fc-detached .fc-tool.auto-on {
+    color: rgba(120,217,151,0.92);
+    background: rgba(120,217,151,0.075);
+  }
+  .float-chat.fc-detached .fc-tool-div {
+    background: rgba(255,255,255,0.055);
+  }
+  .float-chat.fc-detached .fc-src-item.sel {
+    color: rgba(120,217,151,0.94);
+    background: rgba(120,217,151,0.08);
+  }
+  .float-chat.fc-detached .fc-src-tick {
+    color: rgba(120,217,151,0.94);
+  }
 
   /* ── SHORTCUT RECORDER (inline) ── */
   .shortcuts-shell {
@@ -1723,28 +3029,127 @@
     </div>
   </div>
 
+  <div class="meter-strip" id="meterStrip" aria-hidden="true">
+    <span class="meter-strip-side meter-strip-left">
+      <span class="meter-strip-item"><span class="meter-strip-label">Peak</span><span class="meter-strip-value safe">-6.1</span></span>
+      <span class="meter-strip-item"><span class="meter-strip-label">LUFS</span><span class="meter-strip-value">-14.2</span></span>
+      <span class="meter-strip-item">
+        <span class="meter-strip-label">Spectrum</span>
+        <span class="meter-strip-spectrum" aria-hidden="true">
+          <span class="meter-strip-block" style="height: 35%"></span>
+          <span class="meter-strip-block" style="height: 58%"></span>
+          <span class="meter-strip-block" style="height: 82%"></span>
+          <span class="meter-strip-block peak" style="height: 76%"></span>
+          <span class="meter-strip-block" style="height: 63%"></span>
+          <span class="meter-strip-block" style="height: 50%"></span>
+          <span class="meter-strip-block" style="height: 61%"></span>
+          <span class="meter-strip-block" style="height: 42%"></span>
+          <span class="meter-strip-block" style="height: 31%"></span>
+          <span class="meter-strip-block" style="height: 24%"></span>
+          <span class="meter-strip-block" style="height: 32%"></span>
+          <span class="meter-strip-block" style="height: 45%"></span>
+          <span class="meter-strip-block" style="height: 57%"></span>
+          <span class="meter-strip-block" style="height: 69%"></span>
+          <span class="meter-strip-block peak" style="height: 72%"></span>
+          <span class="meter-strip-block" style="height: 65%"></span>
+          <span class="meter-strip-block" style="height: 56%"></span>
+          <span class="meter-strip-block" style="height: 49%"></span>
+          <span class="meter-strip-block" style="height: 44%"></span>
+          <span class="meter-strip-block" style="height: 38%"></span>
+          <span class="meter-strip-block" style="height: 35%"></span>
+          <span class="meter-strip-block" style="height: 42%"></span>
+          <span class="meter-strip-block" style="height: 48%"></span>
+          <span class="meter-strip-block" style="height: 39%"></span>
+          <span class="meter-strip-block" style="height: 33%"></span>
+          <span class="meter-strip-block" style="height: 28%"></span>
+          <span class="meter-strip-block" style="height: 22%"></span>
+          <span class="meter-strip-block" style="height: 18%"></span>
+        </span>
+      </span>
+    </span>
+    <span class="meter-strip-dead-zone" aria-hidden="true"></span>
+    <span class="meter-strip-side meter-strip-right">
+      <span class="meter-strip-item"><span class="meter-strip-label">Stereo</span><span class="meter-strip-value">+0.71</span></span>
+      <span class="meter-strip-item"><span class="meter-strip-label">Clip</span><span class="meter-strip-value safe">0</span></span>
+      <span class="meter-strip-output" aria-hidden="true">
+        <span class="meter-strip-block" style="height: 28%"></span>
+        <span class="meter-strip-block" style="height: 44%"></span>
+        <span class="meter-strip-block" style="height: 62%"></span>
+        <span class="meter-strip-block" style="height: 78%"></span>
+        <span class="meter-strip-block peak" style="height: 72%"></span>
+        <span class="meter-strip-block" style="height: 66%"></span>
+        <span class="meter-strip-block" style="height: 54%"></span>
+        <span class="meter-strip-block" style="height: 48%"></span>
+        <span class="meter-strip-block" style="height: 56%"></span>
+        <span class="meter-strip-block" style="height: 68%"></span>
+        <span class="meter-strip-block" style="height: 60%"></span>
+        <span class="meter-strip-block" style="height: 52%"></span>
+        <span class="meter-strip-block" style="height: 46%"></span>
+        <span class="meter-strip-block" style="height: 40%"></span>
+        <span class="meter-strip-block" style="height: 36%"></span>
+        <span class="meter-strip-block" style="height: 31%"></span>
+        <span class="meter-strip-block" style="height: 27%"></span>
+        <span class="meter-strip-block" style="height: 24%"></span>
+        <span class="meter-strip-block" style="height: 22%"></span>
+        <span class="meter-strip-block" style="height: 20%"></span>
+        <span class="meter-strip-block" style="height: 18%"></span>
+        <span class="meter-strip-block" style="height: 16%"></span>
+      </span>
+    </span>
+  </div>
+
   <div class="notch-zone" id="notchZone">
     <div class="notch" id="notch">
-      <!-- DEFAULT: empty -->
+      <div class="notch-state studio-meter level-safe" id="notchMeter" aria-label="Mock stereo level meter">
+        <span class="meter-side meter-left">
+          <span class="meter-channel">
+            <span class="meter-letter">L</span>
+            <span class="meter-bars" aria-hidden="true">
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+            </span>
+          </span>
+          <span class="meter-value" id="meterValue">-6 dB</span>
+        </span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
+        <span class="meter-side meter-right">
+          <span class="meter-channel">
+            <span class="meter-letter">R</span>
+            <span class="meter-bars" aria-hidden="true">
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+              <span class="meter-bar"></span>
+            </span>
+          </span>
+          <span class="meter-status"><span id="meterStatusLabel">Safe</span><span class="meter-status-dot"></span></span>
+        </span>
+      </div>
       <!-- LISTENING STATE -->
-      <div class="notch-state" id="notchListening">
-        <div class="wave-bars">
-          <span class="bar" style="animation-duration:0.5s"></span>
-          <span class="bar" style="animation-duration:0.7s"></span>
-          <span class="bar" style="animation-duration:0.4s"></span>
-          <span class="bar" style="animation-duration:0.6s"></span>
-          <span class="bar" style="animation-duration:0.45s"></span>
-        </div>
-        <span class="notch-label listening-label">Listening</span>
+      <div class="notch-state voice-state listening-state" id="notchListening">
+        <span class="voice-content"><span class="voice-mark"></span><span class="notch-label listening-label">Listening</span></span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
       </div>
       <!-- THINKING STATE -->
-      <div class="notch-state" id="notchThinking">
-        <div class="think-dots">
-          <span class="dot" style="animation-delay:0s"></span>
-          <span class="dot" style="animation-delay:0.2s"></span>
-          <span class="dot" style="animation-delay:0.4s"></span>
-        </div>
-        <span class="notch-label thinking-label">Thinking</span>
+      <div class="notch-state voice-state thinking-state" id="notchThinking">
+        <span class="voice-content"><span class="voice-mark"></span><span class="notch-label thinking-label">Thinking</span></span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
+      </div>
+      <div class="notch-state voice-state applying-state" id="notchApplying">
+        <span class="voice-content"><span class="voice-mark"></span><span class="notch-label applying-label">Applying</span></span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
+      </div>
+      <div class="notch-state voice-state done-state" id="notchDone">
+        <span class="voice-content"><span class="voice-mark"></span><span class="notch-label done-label">Done</span></span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
+      </div>
+      <div class="notch-state voice-state verify-state" id="notchCantVerify">
+        <span class="voice-content"><span class="voice-mark"></span><span class="notch-label verify-label">Can't verify</span></span>
+        <span class="notch-dead-zone" aria-hidden="true"></span>
       </div>
     </div>
   </div>
@@ -1754,18 +3159,11 @@
       <div class="top-nav" id="topNav">
         <div class="tab-group">
           <div class="tab active" onclick="switchPage('session')" id="tab-session" ondblclick="renameSession(this)" title="Double-click to rename session"><span id="sessionName">Session</span></div>
-          <div class="tab" onclick="switchPage('tasks')" id="tab-tasks">Timeline</div>
-          <div class="tab" id="tab-actions" onclick="switchPage('actions')">Actions</div>
+          <div class="tab" onclick="switchPage('tasks')" id="tab-tasks">Tasks</div>
+          <div class="tab" id="tab-actions" onclick="switchPage('actions')">Meters</div>
+          <div class="tab" id="tab-assistants" onclick="switchPage('assistants')">Assistants</div>
         </div>
         <div class="nav-right">
-          <!-- Mode Select -->
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-tertiary);cursor:pointer;">
-            <select id="harness-mode-select" style="background:var(--surface-2); border:1px solid var(--border-subtle); color:var(--text-primary); padding:2px 4px; border-radius:4px; font-size:11px;">
-              <option value="live">Live Mode</option>
-              <option value="sandbox">AI Sandbox</option>
-              <option value="demo">Demo / Mock</option>
-            </select>
-          </label>
           <div class="status-dot" id="statusDot"></div>
           <button class="gear-btn" onclick="openSettings()" title="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5V3M8 13V14.5M14.5 8H13M3 8H1.5M12.36 3.64L11.3 4.7M4.7 11.3L3.64 12.36M12.36 12.36L11.3 11.3M4.7 4.7L3.64 3.64"/></svg></button>
         </div>
@@ -1773,49 +3171,162 @@
 
       <div class="page active" id="page-session">
         <div class="session-body">
-          <div class="shortcut-hint" id="shortcutHint">
-            <h3>Voice Activation</h3>
-            <p>Hold to speak, release to send — works globally.</p>
-            <div class="shortcut-chips">
-              <span class="kbd">⌃ Control</span>
-              <span class="kbd-sep">+</span>
-              <span class="kbd">⌘ Command</span>
+          <div class="studio-overview">
+            <div class="studio-info-grid">
+              <div class="studio-info-row full">
+                <div class="studio-info-label">Selected</div>
+                <div class="studio-info-value">Vocal Bus · Stereo Out</div>
+              </div>
+              <div class="studio-info-row full">
+                <div class="studio-info-label">Session</div>
+                <div class="studio-info-value">124 BPM · Arrangement · Playing</div>
+              </div>
+              <div class="studio-info-row full">
+                <div class="studio-info-label">Level</div>
+                <div class="studio-info-value safe">Peak -6.1 dB · Safe</div>
+              </div>
             </div>
+            <div class="studio-info-label">Actions</div>
+            <div class="studio-actions">
+              <button class="studio-action-btn has-tooltip" type="button" data-tooltip="Checks the selected track and suggests useful next moves.">Analyze selected</button>
+              <button class="studio-action-btn has-tooltip" type="button" data-tooltip="Looks for clipping or weak level before changing anything.">Check gain</button>
+              <button class="studio-action-btn has-tooltip" type="button" data-tooltip="Explains what the selected track or plugin chain is doing.">Explain chain</button>
+            </div>
+            <div class="studio-ask-row" id="studioAskRow">
+              <input type="text" placeholder="Ask Conductor…" id="chatInput">
+              <button class="send-btn" id="sendBtn" type="button">↑</button>
+            </div>
+            <div class="studio-last-response" id="studioLastResponse"></div>
           </div>
 
-          <div class="chat-area" id="chatArea" style="display:none;">
-            <div class="messages" id="messages">
-              <div class="msg-wrap">
-                <div class="msg assistant">AI Sandbox ready. Type a command and I'll propose an action for your approval before anything touches Ableton.</div>
-              </div>
-            </div>
-            <div class="chat-input-row">
-              <input type="text" placeholder="Ask Conductor..." id="chatInput">
-              <button class="send-btn" id="sendBtn">↑</button>
-            </div>
-            <!-- TOOLBAR -->
-            <div class="chat-toolbar">
-              <button class="toolbar-btn active-live" id="btnLive" onclick="toolbarLive()">Live</button>
-              <button class="toolbar-btn" id="btnAnalyze" onclick="toolbarAnalyze()">Analyze</button>
-              <button class="toolbar-btn" id="btnVoiceTool" onclick="toolbarVoice()">
-                Voice <span class="voice-pulse"></span>
-              </button>
-              <div class="toolbar-divider"></div>
-              <button class="toolbar-btn" id="btnAutoExec" onclick="toolbarAutoExec()" title="Automatically execute AI responses in Ableton">
-                Auto Exec <span class="auto-exec-dot"></span>
-              </button>
-              <div class="toolbar-divider"></div>
-              <div class="source-btn">
-                <button class="toolbar-btn" id="btnSource" onclick="toggleSourceDropdown()">Auto ▾</button>
-                <div class="source-dropdown" id="sourceDropdown">
-                  <div class="source-option selected" onclick="selectSource(this,'Auto')">Auto</div>
-                  <div class="source-option" onclick="selectSource(this,'Source files')">Source files</div>
-                  <div class="source-option" onclick="selectSource(this,'NotebookLM')">NotebookLM</div>
-                  <div class="source-option" onclick="selectSource(this,'Memory only')">Memory only</div>
-                  <div class="source-option" onclick="selectSource(this,'No sources')">No sources</div>
+          <div class="harness-controls session-dev-shell" id="premiumHarnessControls">
+            <details>
+              <summary>Advanced/Harness controls</summary>
+              <div class="shortcut-hint" id="shortcutHint">
+                <h3>Voice Activation</h3>
+                <p>Hold to speak, release to send — works globally.</p>
+                <div class="shortcut-chips">
+                  <span class="kbd">⌃ Control</span>
+                  <span class="kbd-sep">+</span>
+                  <span class="kbd">⌘ Command</span>
                 </div>
               </div>
-            </div>
+              <div class="harness-controls-title">Premium UI Harness</div>
+              <div class="context-copy" id="contextCopy">Ableton is open. Collapsed notch meter values are mock UI for visual testing only.</div>
+              <div class="harness-control-grid">
+                <div class="harness-control">
+                  <label for="contextSelect">Context</label>
+                  <select id="contextSelect">
+                    <option value="studio">Ableton Open</option>
+                    <option value="freeform">Ableton Closed</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="notchStateSelect">Notch state</label>
+                  <select id="notchStateSelect">
+                    <option value="default">Collapsed</option>
+                    <option value="listening">Listening</option>
+                    <option value="thinking">Thinking</option>
+                    <option value="applying">Applying</option>
+                    <option value="done">Done</option>
+                    <option value="cant-verify">Can't verify</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="panelStateSelect">Panel</label>
+                  <select id="panelStateSelect">
+                    <option value="closed">Closed</option>
+                    <option value="open">Open</option>
+                    <option value="pinned">Pinned</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="activeTabSelect">Active tab</label>
+                  <select id="activeTabSelect"></select>
+                </div>
+                <div class="harness-control">
+                  <label for="audioStateSelect">Audio</label>
+                  <select id="audioStateSelect">
+                    <option value="silent" selected>Silent</option>
+                    <option value="playing">Playing</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="levelStateSelect">Level</label>
+                  <select id="levelStateSelect">
+                    <option value="safe">Safe</option>
+                    <option value="peaking">Peaking</option>
+                    <option value="clipping">Clipping</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="mockChatResponsesSelect">Mock Chat Responses</label>
+                  <select id="mockChatResponsesSelect">
+                    <option value="off" selected>Off</option>
+                    <option value="on">On</option>
+                  </select>
+                </div>
+                <div class="harness-control">
+                  <label for="mockResponseSizeSelect">Mock Response Size</label>
+                  <select id="mockResponseSizeSelect">
+                    <option value="small" selected>Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+                </div>
+                <div class="harness-control full-width">
+                  <button class="meter-cycle-btn" id="meterCycleBtn" type="button">Cycle Meter Test: Silent</button>
+                </div>
+              </div>
+              <details class="harness-advanced" id="advancedHarness">
+                <summary>Advanced/debug</summary>
+                <div class="advanced-body">
+                  <div class="advanced-row">
+                    <span>Harness execution mode</span>
+                    <select id="harness-mode-select">
+                      <option value="live">Live Mode</option>
+                      <option value="sandbox">AI Sandbox</option>
+                      <option value="demo">Demo / Mock</option>
+                    </select>
+                  </div>
+                  <div class="advanced-row">
+                    <span>Parser output, token/cost totals, raw proof JSON, export reports, and mock execution controls live here.</span>
+                    <button id="advancedClearBtn" type="button">Clear UI</button>
+                  </div>
+                  <div class="chat-area" id="chatArea" style="display:none;">
+                    <div class="messages" id="messages">
+                      <div class="msg-wrap">
+                        <div class="msg assistant">AI Sandbox ready. Type a command and I'll propose an action for your approval before anything touches Ableton.</div>
+                      </div>
+                    </div>
+                    <div class="chat-toolbar">
+                      <button class="toolbar-btn active-live" id="btnLive" onclick="toolbarLive()">Live</button>
+                      <button class="toolbar-btn" id="btnAnalyze" onclick="toolbarAnalyze()">Analyze</button>
+                      <button class="toolbar-btn" id="btnVoiceTool" onclick="toolbarVoice()">
+                        Voice <span class="voice-pulse"></span>
+                      </button>
+                      <div class="toolbar-divider"></div>
+                      <button class="toolbar-btn" id="btnAutoExec" onclick="toolbarAutoExec()" title="Automatically execute AI responses in Ableton">
+                        Auto Exec <span class="auto-exec-dot"></span>
+                      </button>
+                      <div class="toolbar-divider"></div>
+                      <div class="source-btn">
+                        <button class="toolbar-btn" id="btnSource" onclick="toggleSourceDropdown()">Auto ▾</button>
+                        <div class="source-dropdown" id="sourceDropdown">
+                          <div class="source-option selected" onclick="selectSource(this,'Auto')">Auto</div>
+                          <div class="source-option" onclick="selectSource(this,'Source files')">Source files</div>
+                          <div class="source-option" onclick="selectSource(this,'NotebookLM')">NotebookLM</div>
+                          <div class="source-option" onclick="selectSource(this,'Memory only')">Memory only</div>
+                          <div class="source-option" onclick="selectSource(this,'No sources')">No sources</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="session-totals-mount"></div>
+                  <div id="advanced-action-buttons-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+              </details>
+            </details>
           </div>
         </div>
 
@@ -1824,10 +3335,9 @@
           <div class="footer-row">
             <button class="quit-btn" onclick="alert('Quit Conductor?')">Quit Conductor</button>
             <div class="footer-actions">
-              <button class="dock-btn pin-btn" id="pinBtn" onclick="togglePin()" title="Keep panel open when mouse leaves">Keep Open</button>
-              <button class="dock-btn" id="voiceBtn" onclick="toggleVoice()">Voice</button>
-              <button class="dock-btn" onclick="toggleChat()">Chat</button>
-              <button class="dock-btn">Dock</button>
+              <button class="dock-btn pin-btn has-tooltip" id="pinBtn" onclick="togglePin()" data-tooltip="Keeps this panel pinned.">Keep Open</button>
+              <button class="dock-btn has-tooltip" id="voiceBtn" onclick="toggleVoice()" data-tooltip="Hold Control + Command to speak.">Voice</button>
+              <button class="dock-btn has-tooltip" data-tooltip="Keeps Conductor available while you work.">Dock</button>
             </div>
           </div>
         </div>
@@ -1835,25 +3345,84 @@
 
       <div class="page" id="page-tasks">
         <div class="tasks-body">
-          <div class="activity-now" style="border-bottom: none; padding-bottom: 0;">
-             <div class="activity-section-label" style="display:flex; justify-content:space-between; align-items:center;">
-               <span>Timeline Log</span>
-               <button id="reset-session-btn" style="background:none; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer;">Clear UI</button>
-             </div>
-             <div id="status-display" style="font-size: 11px; color: var(--accent-text); margin-bottom: 8px;">Idle</div>
-             <div id="coproducer-response" class="hidden" style="font-size: 12px; color: var(--text-primary); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; border-left: 2px solid var(--accent);"></div>
-          </div>
-          
-          <div class="activity-log" id="timeline-container">
-            <div class="timeline-empty" style="font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 20px;">Timeline is empty. Execute an action to begin.</div>
+          <div class="tasks-premium">
+            <section>
+              <div class="tasks-section-label">Now</div>
+              <div class="task-row">
+                <span class="task-icon idle" aria-hidden="true"></span>
+                <div class="task-copy">
+                  <div class="task-title">No active task</div>
+                </div>
+              </div>
+            </section>
+            <section>
+              <div class="tasks-section-label">Recent</div>
+              <div class="task-row">
+                <span class="task-icon done" aria-hidden="true">✓</span>
+                <div class="task-copy">
+                  <div class="task-title">Analyzed Vocal Bus</div>
+                  <div class="task-sub">No changes made</div>
+                </div>
+              </div>
+              <div class="task-row">
+                <span class="task-icon done" aria-hidden="true">✓</span>
+                <div class="task-copy">
+                  <div class="task-title">Checked gain</div>
+                  <div class="task-sub">Peak -6.1 dB · Safe</div>
+                </div>
+              </div>
+            </section>
+            <section>
+              <div class="tasks-section-label">Can’t verify</div>
+              <div class="task-row">
+                <span class="task-icon verify" aria-hidden="true">!</span>
+                <div class="task-copy">
+                  <div class="task-title">Send level could not be confirmed</div>
+                </div>
+              </div>
+            </section>
+            <div class="task-controls">
+              <button class="task-control-chip has-tooltip" type="button" data-tooltip="Stops the current pending task.">Cancel</button>
+              <button class="task-control-chip has-tooltip" type="button" data-tooltip="Reverts the last safe action when available.">Undo</button>
+              <button class="task-control-chip has-tooltip" id="taskAutoExecBtn" type="button" onclick="toolbarAutoExec()" data-tooltip="Runs clear moves automatically after checks.">Auto Execute</button>
+            </div>
+            <details class="harness-controls tasks-debug-shell">
+              <summary>Advanced/Harness controls</summary>
+              <div class="activity-now" style="border-bottom: none; padding-bottom: 0;">
+                 <div class="activity-section-label" style="display:flex; justify-content:space-between; align-items:center;">
+                   <span id="tasksHeading">Tasks</span>
+                   <button id="reset-session-btn" style="background:none; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer;">Clear UI</button>
+                 </div>
+                 <div id="status-display" style="font-size: 11px; color: var(--accent-text); margin-bottom: 8px;">Idle</div>
+                 <div id="coproducer-response" class="hidden" style="font-size: 12px; color: var(--text-primary); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 12px; border-left: 2px solid var(--accent);"></div>
+              </div>
+              <div class="activity-log" id="timeline-container">
+                <div class="timeline-empty" style="font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 20px;">Timeline is empty. Execute an action to begin.</div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
 
       <!-- ACTIONS PAGE (INJECTED) -->
       <div class="page" id="page-actions">
-        <div class="session-body" style="padding: 14px; overflow-y: auto;">
-          <div id="action-buttons-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        <div class="context-surface" id="contextualSurface">
+          <div class="surface-title" id="actionsSurfaceTitle">Meters</div>
+          <div class="surface-line" id="actionsSurfaceBody">Premium meter surface placeholder. The collapsed notch meter is mocked for UI state only; no real meter engine is attached here.</div>
+          <div class="surface-grid" id="actionsSurfaceGrid"></div>
+        </div>
+      </div>
+
+      <div class="page" id="page-assistants">
+        <div class="context-surface">
+          <div class="surface-title" id="assistantsSurfaceTitle">Assistants</div>
+          <div class="surface-line" id="assistantsSurfaceBody">Pick a studio focus for the next question or move.</div>
+          <div class="surface-grid" id="assistantsSurfaceGrid">
+            <div class="surface-tile"><strong>Mix Assistant</strong><span>Balance, tone, routing, and gain decisions.</span></div>
+            <div class="surface-tile"><strong>Mastering Assistant</strong><span>Loudness, clipping, stereo safety, and export prep.</span></div>
+            <div class="surface-tile"><strong>Arrangement Assistant</strong><span>Structure, energy, transitions, and section flow.</span></div>
+            <div class="surface-tile"><strong>Plugin Expert</strong><span>Explains selected devices and suggests safe parameter moves.</span></div>
+          </div>
         </div>
       </div>
 
@@ -2182,37 +3751,13 @@
         </div>
       </div>
       <!-- × = close floating chat in place (only visible when detached) -->
-      <button class="fc-x-btn" onclick="closeDetachedChat()" title="Close floating chat">
+      <button class="fc-x-btn" onclick="chatState === 'attached' ? closeChatFully() : closeDetachedChat()" title="Return to Session">
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
       </button>
     </div>
 
     <!-- Messages -->
-    <div class="fc-messages" id="floatMessages">
-      <div class="fc-ai-msg">Hey, I'm Conductor. Ask me anything about your session — mixing, arrangement, creative direction, or just run mock execution.</div>
-      <div class="fc-actions">
-        <button class="fc-copy-btn" onclick="fcCopy(this)">
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
-          Copy
-        </button>
-        <button class="fc-exec-btn" onclick="fcExec(this)">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg>
-          (Demo) Mock Execution
-        </button>
-      </div>
-      <div class="fc-user-msg">Create a cinematic pad with strings and tabla for my A.R. Rahman-style track</div>
-      <div class="fc-ai-msg">On it — creating a MIDI track with a lush string pad layered with tabla at 92 BPM. Reverb tail set to 3.2s, routed to a send for width. Want me to add a sub-bass swell underneath?</div>
-      <div class="fc-actions">
-        <button class="fc-copy-btn" onclick="fcCopy(this)">
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 8V2h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
-          Copy
-        </button>
-        <button class="fc-exec-btn" onclick="fcExec(this)">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="1.5,1 9,5 1.5,9" fill="currentColor"/></svg>
-          (Demo) Mock Execution
-        </button>
-      </div>
-    </div>
+    <div class="fc-messages" id="floatMessages"></div>
 
     <!-- Input row -->
     <div class="fc-input-row">
@@ -2230,7 +3775,7 @@
         placeholder="Ask anything about your session…">
       <button class="fc-send-btn" id="floatSendBtn">↵</button>
     </div>
-    <div id="floatHarnessStatus" style="font-size:10px;color:var(--text-tertiary);padding:0 14px 8px;"></div>
+    <div id="floatHarnessStatus" style="display:none;font-size:10px;color:var(--text-tertiary);padding:0 14px 8px;"></div>
 
     <!-- Toolbar -->
     <div class="fc-toolbar">
@@ -2250,7 +3795,7 @@
       <div class="fc-tool-div"></div>
       <button class="fc-tool" id="fBtnAutoExec" onclick="fAutoExec()" title="Auto-execute responses">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="2,1.5 9,5 2,8.5" fill="currentColor" opacity=".55"/></svg>
-        Auto Exec
+        <span id="fAutoExecLabel">Auto Exec</span>
         <span class="fc-auto-dot"></span>
       </button>
       <div class="fc-spacer"></div>
@@ -2271,6 +3816,8 @@
       <div class="fc-src-item" onclick="fPickSrc(this,'No sources')"><span style="flex:1">No sources</span><span class="fc-src-tick">✓</span></div>
     </div>
 
+    <div class="fc-resize-handle" id="floatResizeHandle" title="Resize chat" aria-hidden="true"></div>
+
   </div>
 
   <div class="desktop-label">Conductor desktop preview</div>
@@ -2279,6 +3826,26 @@
 <script>
   let chatOpen = false;
   let currentTab = 'session';
+  let surfaceContext = 'studio';
+  let mockAudioState = 'silent';
+  let mockLevelState = 'safe';
+  let mockChatResponsesEnabled = false;
+  let mockResponseSize = 'small';
+
+  const SURFACE_TABS = {
+    studio: [
+      { id: 'session', label: 'Session' },
+      { id: 'tasks', label: 'Tasks' },
+      { id: 'actions', label: 'Meters' },
+      { id: 'assistants', label: 'Assistants' }
+    ],
+    freeform: [
+      { id: 'session', label: 'Ask' },
+      { id: 'tasks', label: 'Learn' },
+      { id: 'actions', label: 'Notes' },
+      { id: 'assistants', label: 'Assistants' }
+    ]
+  };
 
   // Tasks tab toggles: click when active → go back to Session
   function toggleTasksTab() {
@@ -2293,10 +3860,12 @@
     closeAttachedChatForNavigation();
     currentTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
+    const activeTab = document.getElementById('tab-' + tab);
+    if (activeTab) activeTab.classList.add('active');
     // Clear both class AND any inline display styles left by openSettings/closeSettings
     document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); p.style.display = ''; });
-    document.getElementById('page-' + tab).classList.add('active');
+    const page = document.getElementById('page-' + tab);
+    if (page) page.classList.add('active');
     document.getElementById('settingsPage').classList.remove('active');
     document.getElementById('integrationsPage').classList.remove('active');
     document.getElementById('shortcutsPage').classList.remove('active');
@@ -2306,7 +3875,203 @@
     const footer = document.getElementById('sessionFooter');
     const sessionBody = document.querySelector('.session-body');
     if (footer) footer.style.display = tab === 'session' ? 'block' : 'none';
+    const activeTabSelect = document.getElementById('activeTabSelect');
+    if (activeTabSelect && activeTabSelect.value !== tab) activeTabSelect.value = tab;
+  }
 
+  window.applyPremiumTab = switchTab;
+  window.getMockChatResponseConfig = function getMockChatResponseConfig() {
+    return {
+      enabled: mockChatResponsesEnabled,
+      size: mockResponseSize
+    };
+  };
+  let meterStripState = 'hidden';
+
+  function syncMeterStripControl() {
+    const strip = document.getElementById('meterStrip');
+    const btn = document.getElementById('meterStripToggleBtn');
+    const compact = meterStripState === 'compact';
+    if (strip) {
+      strip.classList.toggle('compact', compact);
+      strip.setAttribute('aria-hidden', compact ? 'false' : 'true');
+    }
+    if (btn) {
+      btn.textContent = compact ? 'Hide Strip' : 'Show Strip';
+      btn.setAttribute('aria-pressed', compact ? 'true' : 'false');
+    }
+  }
+
+  function toggleMeterStrip() {
+    meterStripState = meterStripState === 'compact' ? 'hidden' : 'compact';
+    syncMeterStripControl();
+  }
+
+  function updateSurfaceTabs() {
+    const tabs = SURFACE_TABS[surfaceContext];
+    tabs.forEach(({ id, label }) => {
+      const tab = document.getElementById('tab-' + id);
+      if (!tab) return;
+      if (id === 'session') {
+        const sessionName = document.getElementById('sessionName');
+        if (sessionName) sessionName.textContent = label;
+      } else {
+        tab.textContent = label;
+      }
+    });
+
+    const activeTabSelect = document.getElementById('activeTabSelect');
+    if (activeTabSelect) {
+      activeTabSelect.innerHTML = tabs.map(({ id, label }) => `<option value="${id}">${label}</option>`).join('');
+      activeTabSelect.value = currentTab;
+    }
+
+    const contextCopy = document.getElementById('contextCopy');
+    if (contextCopy) {
+      contextCopy.textContent = surfaceContext === 'studio'
+        ? 'Ableton is open. Collapsed notch meter values are mock UI for visual testing only.'
+        : 'Ableton is closed. Collapsed notch stays quiet with no prompt text.';
+    }
+
+    const tasksHeading = document.getElementById('tasksHeading');
+    if (tasksHeading) tasksHeading.textContent = surfaceContext === 'studio' ? 'Tasks' : 'Learn';
+
+    renderContextSurface();
+    renderAssistantsSurface();
+    setNotchState(notchState || 'default');
+  }
+
+  function renderAssistantsSurface() {
+    const title = document.getElementById('assistantsSurfaceTitle');
+    const body = document.getElementById('assistantsSurfaceBody');
+    const grid = document.getElementById('assistantsSurfaceGrid');
+    if (!title || !body || !grid) return;
+
+    title.textContent = 'Assistants';
+    if (surfaceContext === 'studio') {
+      body.textContent = 'Pick a studio focus for the next question or move.';
+      grid.innerHTML = `
+        <div class="surface-tile"><strong>Mix Assistant</strong><span>Balance, tone, routing, and gain decisions.</span></div>
+        <div class="surface-tile"><strong>Mastering Assistant</strong><span>Loudness, clipping, stereo safety, and export prep.</span></div>
+        <div class="surface-tile"><strong>Arrangement Assistant</strong><span>Structure, energy, transitions, and section flow.</span></div>
+        <div class="surface-tile"><strong>Plugin Expert</strong><span>Explains selected devices and suggests safe parameter moves.</span></div>`;
+    } else {
+      body.textContent = 'Pick a focus for the next question.';
+      grid.innerHTML = `
+        <div class="surface-tile"><strong>Ask</strong><span>Start with an open question or idea.</span></div>
+        <div class="surface-tile"><strong>Learn</strong><span>Explain concepts in plain language.</span></div>
+        <div class="surface-tile"><strong>Notes</strong><span>Capture thoughts for later sessions.</span></div>
+        <div class="surface-tile"><strong>References</strong><span>Use saved context when it helps.</span></div>`;
+    }
+  }
+
+  function renderContextSurface() {
+    const title = document.getElementById('actionsSurfaceTitle');
+    const body = document.getElementById('actionsSurfaceBody');
+    const grid = document.getElementById('actionsSurfaceGrid');
+    if (!title || !body || !grid) return;
+
+    if (surfaceContext === 'studio') {
+      title.textContent = 'Meters';
+      body.textContent = '';
+      grid.innerHTML = `
+        <div class="compact-meter-view">
+          <div class="compact-meter-head">
+            <div class="compact-meter-title">Master Out</div>
+            <div class="compact-meter-note">Mock UI</div>
+          </div>
+          <div class="compact-meter-stats">
+            <div class="compact-meter-stat">
+              <div class="compact-meter-label">Peak</div>
+              <div class="compact-meter-value safe">-6.1</div>
+            </div>
+            <div class="compact-meter-stat">
+              <div class="compact-meter-label">LUFS</div>
+              <div class="compact-meter-value">-14.2</div>
+            </div>
+          </div>
+          <div class="meter-spectrum-row">
+            <div class="meter-spectrum-card">
+              <div class="compact-meter-label">Spectrum</div>
+              <div class="meter-spectrum" aria-hidden="true">
+                <span class="spectrum-block" style="height: 24%"></span>
+                <span class="spectrum-block" style="height: 42%"></span>
+                <span class="spectrum-block" style="height: 64%"></span>
+                <span class="spectrum-block" style="height: 76%"></span>
+                <span class="spectrum-block peak" style="height: 70%"></span>
+                <span class="spectrum-block" style="height: 58%"></span>
+                <span class="spectrum-block" style="height: 48%"></span>
+                <span class="spectrum-block" style="height: 54%"></span>
+                <span class="spectrum-block" style="height: 62%"></span>
+                <span class="spectrum-block" style="height: 46%"></span>
+                <span class="spectrum-block" style="height: 36%"></span>
+                <span class="spectrum-block" style="height: 42%"></span>
+                <span class="spectrum-block" style="height: 32%"></span>
+                <span class="spectrum-block" style="height: 28%"></span>
+                <span class="spectrum-block" style="height: 34%"></span>
+                <span class="spectrum-block" style="height: 22%"></span>
+                <span class="spectrum-block" style="height: 18%"></span>
+                <span class="spectrum-block" style="height: 14%"></span>
+              </div>
+            </div>
+            <div class="meter-side-stat">
+              <div class="compact-meter-stat">
+                <div class="compact-meter-label">Stereo</div>
+                <div class="compact-meter-value">+0.71</div>
+              </div>
+              <div class="compact-meter-stat">
+                <div class="compact-meter-label">Clip</div>
+                <div class="compact-meter-value clip-zero">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="meter-actions">
+            <button class="meter-action-chip" type="button">Analyze</button>
+            <button class="meter-action-chip" type="button">Check mono</button>
+            <button class="meter-action-chip" type="button">Explain</button>
+            <button class="meter-action-chip" id="meterStripToggleBtn" type="button" onclick="toggleMeterStrip()">Show Strip</button>
+          </div>
+        </div>`;
+      syncMeterStripControl();
+    } else {
+      title.textContent = 'Notes';
+      body.textContent = 'Notes for ideas, references, and learning outside a live Ableton session.';
+      grid.innerHTML = `
+        <div class="surface-tile"><strong>Scratchpad</strong><span>Capture loose production thoughts.</span></div>
+        <div class="surface-tile"><strong>References</strong><span>Hold links or concepts for later.</span></div>
+        <div class="surface-tile"><strong>Questions</strong><span>Park learning prompts.</span></div>
+        <div class="surface-tile"><strong>Next session</strong><span>Save intent without touching Live.</span></div>`;
+    }
+  }
+
+  function setSurfaceContext(context) {
+    surfaceContext = context === 'freeform' ? 'freeform' : 'studio';
+    updateSurfaceTabs();
+  }
+
+  function applyPanelHarnessState(state) {
+    if (state === 'open') {
+      pinned = false;
+      showPanel();
+    } else if (state === 'pinned') {
+      pinned = true;
+      const btn = document.getElementById('pinBtn');
+      if (btn) {
+        btn.classList.add('pinned');
+        btn.textContent = 'Pinned';
+      }
+      showPanel();
+    } else {
+      pinned = false;
+      const btn = document.getElementById('pinBtn');
+      if (btn) {
+        btn.classList.remove('pinned');
+        btn.textContent = 'Keep Open';
+      }
+      document.body.classList.remove('panel-open');
+      panelWrap.classList.remove('visible');
+      panelWrap.classList.add('hidden-state');
+    }
   }
 
   function toggleChat() {
@@ -2536,9 +4301,25 @@
   function toolbarAutoExec() {
     autoExecActive = !autoExecActive;
     const btn = document.getElementById('btnAutoExec');
-    btn.classList.toggle('auto-exec-on', autoExecActive);
-    btn.childNodes[0].textContent = autoExecActive ? 'Auto Execute ' : 'Auto Execute ';
-    showToast(autoExecActive ? 'Auto Execute ON — responses will run in Ableton automatically' : 'Auto Execute OFF');
+    const taskBtn = document.getElementById('taskAutoExecBtn');
+    const tasksTab = document.getElementById('tab-tasks');
+    if (btn) {
+      btn.classList.toggle('auto-exec-on', autoExecActive);
+      btn.childNodes[0].textContent = autoExecActive ? 'Auto On ' : 'Auto Execute ';
+    }
+    if (taskBtn) {
+      taskBtn.classList.add('label-fade');
+      setTimeout(() => {
+        taskBtn.textContent = autoExecActive ? 'Auto On' : 'Auto Execute';
+        taskBtn.classList.remove('label-fade');
+      }, 110);
+    }
+    if (autoExecActive && tasksTab) {
+      tasksTab.classList.remove('auto-exec-confirm');
+      void tasksTab.offsetWidth;
+      tasksTab.classList.add('auto-exec-confirm');
+      setTimeout(() => tasksTab.classList.remove('auto-exec-confirm'), 1520);
+    }
   }
 
   function toggleSourceDropdown() {
@@ -2572,18 +4353,67 @@
     zone.classList.toggle('shortcut-voice', active);
   }
 
+  function updateVoiceSurfaceState() {
+    const notch = document.getElementById('notch');
+    const zone = document.getElementById('notchZone');
+    if (!notch || !zone) return;
+    const voiceVisible = ['listening', 'thinking', 'applying', 'done', 'cant-verify'].includes(notchState);
+    const voiceSizeClasses = ['voice-listening', 'voice-thinking', 'voice-applying', 'voice-done', 'voice-cant-verify'];
+    notch.classList.remove(...voiceSizeClasses);
+    zone.classList.remove(...voiceSizeClasses);
+    notch.classList.toggle('voice-surface', voiceVisible);
+    zone.classList.toggle('voice-surface', voiceVisible);
+    if (voiceVisible) {
+      const sizeClass = 'voice-' + notchState;
+      notch.classList.add(sizeClass);
+      zone.classList.add(sizeClass);
+    }
+  }
+
+  function updateMeterMockState() {
+    const notch = document.getElementById('notch');
+    const zone = document.getElementById('notchZone');
+    const meter = document.getElementById('notchMeter');
+    const value = document.getElementById('meterValue');
+    const status = document.getElementById('meterStatusLabel');
+    if (!notch || !zone || !meter) return;
+
+    const meterVisible = notchState === 'default' && surfaceContext === 'studio' && mockAudioState === 'playing';
+    meter.classList.toggle('active', meterVisible);
+    notch.classList.toggle('meter-surface', meterVisible);
+    zone.classList.toggle('meter-surface', meterVisible);
+    notch.classList.toggle('audio-playing', meterVisible);
+    notch.classList.toggle('audio-silent', notchState === 'default' && surfaceContext === 'studio' && mockAudioState === 'silent');
+    if (meterVisible) {
+      notch.classList.remove('voice-surface');
+      zone.classList.remove('voice-surface');
+    }
+    updateVoiceSurfaceState();
+
+    meter.classList.remove('level-safe', 'level-peaking', 'level-clipping');
+    meter.classList.add('level-' + mockLevelState);
+
+    const labels = {
+      safe: { text: 'Safe', value: '-6 dB' },
+      peaking: { text: 'Peaking', value: '-3 dB' },
+      clipping: { text: 'Clipping', value: '0 dB' }
+    };
+    const current = labels[mockLevelState] || labels.safe;
+    if (status) status.textContent = current.text;
+    if (value) value.textContent = current.value;
+  }
+
   document.addEventListener('keydown', (e) => {
     // ⌃⌘ held — activate voice
     if (e.ctrlKey && e.metaKey && !ctrlCmdVoiceActive) {
       ctrlCmdVoiceActive = true;
       setShortcutVoiceVisual(true);
-      // open chat if not open
-      if (!chatOpen) toggleChat();
       // activate voice
       voiceToolActive = true;
       const btn = document.getElementById('btnVoiceTool');
       if (btn) btn.classList.add('active-voice');
-      document.getElementById('chatInput').placeholder = 'Listening… speak now';
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) chatInput.placeholder = 'Listening… speak now';
       setNotchState('listening');
       const topVoice = document.getElementById('voiceBtn');
       if (topVoice) { topVoice.style.borderColor='#FF8C3A'; topVoice.style.color='#FF8C3A'; }
@@ -2599,7 +4429,8 @@
       voiceToolActive = false;
       const btn = document.getElementById('btnVoiceTool');
       if (btn) btn.classList.remove('active-voice');
-      document.getElementById('chatInput').placeholder = 'Ask Conductor...';
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput) chatInput.placeholder = 'Ask Conductor...';
       setNotchState('default');
       const topVoice = document.getElementById('voiceBtn');
       if (topVoice) { topVoice.style.borderColor=''; topVoice.style.color=''; }
@@ -2614,7 +4445,9 @@
   let chatHidden = false;      // ⌃-hide, only when detached
   let detachedX = null, detachedY = null;
   let chatDraggedOnce = false, chatTipTimer = null;
+  let chatFocusOpenedAt = 0;
   let fLiveOn = true, fAnalyzeOn = false, fVoiceOn = false, fAutoExecOn = false;
+  const floatStateGlowTimers = {};
   const floatGlowColors = [
     { rgb: '102,153,255', border: 'rgba(102,153,255,0.68)' },
     { rgb: '117,231,190', border: 'rgba(117,231,190,0.58)' },
@@ -2663,21 +4496,63 @@
     setTimeout(() => el.classList.remove(cls), kind === 'hide' ? 260 : 540);
   }
 
+  function setAttachedChatVisualState(active) {
+    const askRow = document.getElementById('studioAskRow');
+    if (askRow) askRow.classList.toggle('chat-attached', active);
+    const panel = document.getElementById('panel');
+    if (panel) panel.classList.toggle('chat-focus', active);
+  }
+
+  function updateSessionAskPreviewFromChat() {
+    const preview = document.getElementById('studioLastResponse');
+    const input = document.getElementById('chatInput');
+    const messages = document.getElementById('floatMessages');
+    if (!preview || !messages) return;
+    const assistantMessages = Array.from(messages.querySelectorAll('.fc-ai-msg'));
+    const last = assistantMessages[assistantMessages.length - 1];
+    const text = last ? last.textContent.trim() : '';
+    if (text) {
+      const shortText = text.length > 120 ? text.slice(0, 117).trim() + '...' : text;
+      preview.textContent = shortText;
+      preview.classList.add('visible');
+      if (input) input.placeholder = shortText;
+    } else {
+      preview.textContent = '';
+      preview.classList.remove('visible');
+      if (input) input.placeholder = 'Ask Conductor...';
+    }
+  }
+
+  function shouldHoldChatFocusOpen() {
+    if (chatState !== 'attached') return false;
+    const panel = document.getElementById('panel');
+    const chat = _fcEl();
+    if (!panel || !chat || !panel.classList.contains('chat-focus')) return false;
+    return chat.contains(document.activeElement);
+  }
+
   // ── Open attached (default — chat extends below notch) ──
   function openChatAttached() {
+    if (hideTimer) clearTimeout(hideTimer);
+    chatFocusOpenedAt = Date.now();
     chatState = 'attached';
     chatHidden = false;
     chatOpen = true;
     const el = _fcEl();
+    document.body.classList.add('panel-open');
+    panelWrap.classList.add('visible');
+    panelWrap.classList.remove('hidden-state');
     _fcAttachToPanel();
     el.style.left = '';
     el.style.top = '';
     el.style.width = '';
+    el.style.height = '';
     el.style.transform = '';
     el.style.opacity = '';
     el.style.pointerEvents = '';
     el.classList.remove('fc-detached', 'fc-closing');
     el.classList.add('fc-attached');
+    setAttachedChatVisualState(true);
     setTimeout(() => {
       const m = document.getElementById('floatMessages');
       if (m) m.scrollTop = m.scrollHeight;
@@ -2688,6 +4563,35 @@
     if (hint) { hint.style.maxHeight='0'; hint.style.opacity='0'; hint.style.overflow='hidden'; hint.classList.add('collapsed'); }
     const footer = document.getElementById('sessionFooter');
     if (footer) footer.style.display = 'none';
+  }
+
+  function prepareAttachedChatFromSessionInput(sourceInput) {
+    if (!sourceInput || sourceInput.id !== 'chatInput' || surfaceContext !== 'studio') return sourceInput;
+    const text = sourceInput.value;
+    if (!text.trim()) return sourceInput;
+    showPanel();
+    if (currentTab !== 'session') switchTab('session');
+    openChatAttached();
+    const floatInput = document.getElementById('floatChatInput');
+    if (!floatInput) return sourceInput;
+    floatInput.value = text;
+    sourceInput.value = '';
+    setNotchState('thinking');
+    requestAnimationFrame(() => floatInput.focus());
+    return floatInput;
+  }
+
+  window.prepareAttachedChatFromSessionInput = prepareAttachedChatFromSessionInput;
+
+  function collapseChatFocusFromOutside() {
+    closeChatFully();
+    if (!pinned) {
+      panelWrap.classList.remove('visible');
+      panelWrap.classList.add('hidden-state');
+      document.body.classList.remove('panel-open');
+      const panelStateSelect = document.getElementById('panelStateSelect');
+      if (panelStateSelect) panelStateSelect.value = 'closed';
+    }
   }
 
   // ── Detach smoothly (called when drag threshold exceeded) ──
@@ -2756,7 +4660,9 @@
       el.style.transform = '';     // hand centering back to CSS (translateX(-50%))
       el.style.top       = '';
       el.style.width     = '';
+      el.style.height    = '';
       el.classList.remove('fc-detached', 'fc-docking');
+      el.classList.remove('has-resized');
       el.classList.add('fc-attached');
       requestAnimationFrame(() => { el.style.transition = ''; });
     }, 305);
@@ -2770,6 +4676,7 @@
     chatState = 'closed';
     chatHidden = false;
     chatOpen = false;
+    setAttachedChatVisualState(false);
     detachedX = null; detachedY = null;
     el.style.transition = 'none';
     el.style.left = Math.round(rect.left) + 'px';
@@ -2784,6 +4691,7 @@
       el.style.left = '';
       el.style.top = '';
       el.style.width = '';
+      el.style.height = '';
       el.style.transform = '';
       el.style.opacity = '';
       el.style.pointerEvents = '';
@@ -2799,8 +4707,11 @@
     chatHidden = false;
     detachedX = null; detachedY = null;
     chatOpen = false;
+    updateSessionAskPreviewFromChat();
+    setAttachedChatVisualState(false);
     const el = _fcEl();
     el.classList.remove('fc-attached', 'fc-detached');
+    el.classList.remove('has-resized');
     el.classList.add('fc-closing');
     _fcAttachToDesktop();
     el.style.left = ''; el.style.transform = ''; el.style.opacity = ''; el.style.pointerEvents = '';
@@ -2859,6 +4770,9 @@
   // ── DRAG LOGIC ──────────────────────────────────────────
   let fDragging = false, fOffX = 0, fOffY = 0;
   let fDragStartX = 0, fDragStartY = 0, fDetachTriggered = false;
+  let fResizing = false, fResizeStartX = 0, fResizeStartY = 0, fResizeStartW = 0, fResizeStartH = 0;
+  const FLOAT_MIN_W = 340;
+  const FLOAT_MIN_H = 260;
   const DETACH_PX = 7; // pixels of movement before detach kicks in
 
   document.getElementById('floatHeader').addEventListener('mousedown', (e) => {
@@ -2874,7 +4788,35 @@
     e.preventDefault();
   });
 
+  const floatResizeHandle = document.getElementById('floatResizeHandle');
+  if (floatResizeHandle) {
+    floatResizeHandle.addEventListener('mousedown', (e) => {
+      if (chatState !== 'detached') return;
+      const el = _fcEl();
+      const rect = el.getBoundingClientRect();
+      fResizing = true;
+      fResizeStartX = e.clientX;
+      fResizeStartY = e.clientY;
+      fResizeStartW = rect.width;
+      fResizeStartH = rect.height;
+      el.classList.add('fc-resizing', 'has-resized');
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
   document.addEventListener('mousemove', (e) => {
+    if (fResizing) {
+      const el = _fcEl();
+      const rect = el.getBoundingClientRect();
+      const maxW = Math.max(FLOAT_MIN_W, window.innerWidth - rect.left - 8);
+      const maxH = Math.max(FLOAT_MIN_H, window.innerHeight - rect.top - 8);
+      const nextW = Math.max(FLOAT_MIN_W, Math.min(maxW, fResizeStartW + (e.clientX - fResizeStartX)));
+      const nextH = Math.max(FLOAT_MIN_H, Math.min(maxH, fResizeStartH + (e.clientY - fResizeStartY)));
+      el.style.width = Math.round(nextW) + 'px';
+      el.style.height = Math.round(nextH) + 'px';
+      return;
+    }
     if (!fDragging) return;
     const dx = e.clientX - fDragStartX;
     const dy = e.clientY - fDragStartY;
@@ -2894,6 +4836,10 @@
   });
 
   document.addEventListener('mouseup', () => {
+    if (fResizing) {
+      fResizing = false;
+      _fcEl().classList.remove('fc-resizing');
+    }
     if (fDragging) {
       fDragging = false;
       fDetachTriggered = false;
@@ -2951,9 +4897,27 @@
     fLiveOn = !fLiveOn;
     document.getElementById('fBtnLive').classList.toggle('on', fLiveOn);
   }
+  function pulseFloatStateGlow(className) {
+    const chat = _fcEl();
+    if (!chat) return;
+    clearTimeout(floatStateGlowTimers[className]);
+    chat.classList.remove(className);
+    void chat.offsetWidth;
+    chat.classList.add(className);
+    floatStateGlowTimers[className] = setTimeout(() => {
+      chat.classList.remove(className);
+    }, 1800);
+  }
+  function clearFloatStateGlow(className) {
+    const chat = _fcEl();
+    clearTimeout(floatStateGlowTimers[className]);
+    if (chat) chat.classList.remove(className);
+  }
   function fAnalyze() {
     fAnalyzeOn = !fAnalyzeOn;
     document.getElementById('fBtnAnalyze').classList.toggle('on', fAnalyzeOn);
+    if (fAnalyzeOn) pulseFloatStateGlow('fc-analyze-glow');
+    else clearFloatStateGlow('fc-analyze-glow');
     document.getElementById('floatChatInput').placeholder = fAnalyzeOn ? 'Analyzing audio…' : 'Ask anything about your session…';
   }
   function fVoiceTool() {
@@ -2965,7 +4929,10 @@
   function fAutoExec() {
     fAutoExecOn = !fAutoExecOn;
     document.getElementById('fBtnAutoExec').classList.toggle('auto-on', fAutoExecOn);
-    showToast(fAutoExecOn ? 'Auto Execute ON' : 'Auto Execute OFF');
+    if (fAutoExecOn) pulseFloatStateGlow('fc-auto-glow');
+    else clearFloatStateGlow('fc-auto-glow');
+    const label = document.getElementById('fAutoExecLabel');
+    if (label) label.textContent = fAutoExecOn ? 'Auto On' : 'Auto Exec';
   }
   function fToggleSrc() {
     document.getElementById('fSrcDropdown').classList.toggle('open');
@@ -2982,28 +4949,137 @@
   const panel = document.getElementById('panel');
   const desktop = document.getElementById('desktop');
   // ── NOTCH STATES ─────────────────────────────
-  let notchState = 'default'; // default | listening | thinking
+  let notchState = 'default'; // default | listening | thinking | applying | done | cant-verify
   let voiceActive = false;
 
   function setNotchState(state) {
     const notch = document.getElementById('notch');
+    const meter = document.getElementById('notchMeter');
     const listening = document.getElementById('notchListening');
     const thinking = document.getElementById('notchThinking');
+    const applying = document.getElementById('notchApplying');
+    const done = document.getElementById('notchDone');
+    const cantVerify = document.getElementById('notchCantVerify');
 
-    notch.classList.remove('listening', 'thinking');
-    listening.classList.remove('active');
-    thinking.classList.remove('active');
+    notch.classList.remove('listening', 'thinking', 'applying', 'done', 'cant-verify');
+    [meter, listening, thinking, applying, done, cantVerify].forEach(el => el && el.classList.remove('active'));
 
     notchState = state;
 
-    if (state === 'listening') {
+    if (state === 'default') {
+      if (surfaceContext === 'studio') meter.classList.add('active');
+    } else if (state === 'listening') {
       notch.classList.add('listening');
       listening.classList.add('active');
     } else if (state === 'thinking') {
       notch.classList.add('thinking');
       thinking.classList.add('active');
+    } else if (state === 'applying') {
+      notch.classList.add('applying');
+      applying.classList.add('active');
+    } else if (state === 'done') {
+      notch.classList.add('done');
+      done.classList.add('active');
+    } else if (state === 'cant-verify') {
+      notch.classList.add('cant-verify');
+      cantVerify.classList.add('active');
+    }
+    const notchStateSelect = document.getElementById('notchStateSelect');
+    if (notchStateSelect && notchStateSelect.value !== state) notchStateSelect.value = state;
+    updateMeterMockState();
+  }
+
+  const contextSelect = document.getElementById('contextSelect');
+  const notchStateSelect = document.getElementById('notchStateSelect');
+  const panelStateSelect = document.getElementById('panelStateSelect');
+  const activeTabSelect = document.getElementById('activeTabSelect');
+  const audioStateSelect = document.getElementById('audioStateSelect');
+  const levelStateSelect = document.getElementById('levelStateSelect');
+  const mockChatResponsesSelect = document.getElementById('mockChatResponsesSelect');
+  const mockResponseSizeSelect = document.getElementById('mockResponseSizeSelect');
+  const meterCycleBtn = document.getElementById('meterCycleBtn');
+
+  function syncMeterHarnessControls() {
+    if (audioStateSelect) audioStateSelect.value = mockAudioState;
+    if (levelStateSelect) levelStateSelect.value = mockLevelState;
+    if (meterCycleBtn) {
+      const label = mockAudioState === 'silent'
+        ? 'Silent'
+        : mockLevelState.charAt(0).toUpperCase() + mockLevelState.slice(1);
+      meterCycleBtn.textContent = 'Cycle Meter Test: ' + label;
     }
   }
+
+  function cycleMeterTestState() {
+    if (surfaceContext !== 'studio') {
+      if (contextSelect) contextSelect.value = 'studio';
+      surfaceContext = 'studio';
+      updateSurfaceTabs();
+    }
+    if (notchState !== 'default') setNotchState('default');
+
+    if (mockAudioState === 'silent') {
+      mockAudioState = 'playing';
+      mockLevelState = 'safe';
+    } else if (mockLevelState === 'safe') {
+      mockLevelState = 'peaking';
+    } else if (mockLevelState === 'peaking') {
+      mockLevelState = 'clipping';
+    } else {
+      mockAudioState = 'silent';
+      mockLevelState = 'safe';
+    }
+    syncMeterHarnessControls();
+    updateMeterMockState();
+  }
+
+  if (contextSelect) {
+    contextSelect.addEventListener('change', (e) => setSurfaceContext(e.target.value));
+  }
+  if (notchStateSelect) {
+    notchStateSelect.addEventListener('change', (e) => {
+      const state = e.target.value;
+      setShortcutVoiceVisual(state !== 'default');
+      setNotchState(state);
+    });
+  }
+  if (panelStateSelect) {
+    panelStateSelect.addEventListener('change', (e) => applyPanelHarnessState(e.target.value));
+  }
+  if (activeTabSelect) {
+    activeTabSelect.addEventListener('change', (e) => switchTab(e.target.value));
+  }
+  if (audioStateSelect) {
+    audioStateSelect.addEventListener('change', (e) => {
+      mockAudioState = e.target.value === 'silent' ? 'silent' : 'playing';
+      syncMeterHarnessControls();
+      updateMeterMockState();
+    });
+  }
+  if (levelStateSelect) {
+    levelStateSelect.addEventListener('change', (e) => {
+      mockLevelState = ['safe', 'peaking', 'clipping'].includes(e.target.value) ? e.target.value : 'safe';
+      if (mockAudioState === 'silent') mockAudioState = 'playing';
+      syncMeterHarnessControls();
+      updateMeterMockState();
+    });
+  }
+  if (mockChatResponsesSelect) {
+    mockChatResponsesSelect.addEventListener('change', (e) => {
+      mockChatResponsesEnabled = e.target.value === 'on';
+    });
+  }
+  if (mockResponseSizeSelect) {
+    mockResponseSizeSelect.addEventListener('change', (e) => {
+      mockResponseSize = ['small', 'medium', 'long'].includes(e.target.value) ? e.target.value : 'small';
+    });
+  }
+  if (meterCycleBtn) {
+    meterCycleBtn.addEventListener('click', cycleMeterTestState);
+  }
+
+  syncMeterHarnessControls();
+  updateSurfaceTabs();
 
   function toggleVoice() {
     voiceActive = !voiceActive;
@@ -3027,10 +5103,14 @@
     if (pinned) {
       btn.classList.add('pinned');
       btn.textContent = 'Pinned';
+      const panelStateSelect = document.getElementById('panelStateSelect');
+      if (panelStateSelect) panelStateSelect.value = 'pinned';
       showPanel();
     } else {
       btn.classList.remove('pinned');
       btn.textContent = 'Keep Open';
+      const panelStateSelect = document.getElementById('panelStateSelect');
+      if (panelStateSelect) panelStateSelect.value = 'open';
     }
   }
 
@@ -3038,8 +5118,11 @@
 
   function showPanel() {
     if (hideTimer) clearTimeout(hideTimer);
+    document.body.classList.add('panel-open');
     panelWrap.classList.add('visible');
     panelWrap.classList.remove('hidden-state');
+    const panelStateSelect = document.getElementById('panelStateSelect');
+    if (panelStateSelect && panelStateSelect.value === 'closed') panelStateSelect.value = pinned ? 'pinned' : 'open';
     // If attached chat was hidden with the panel, restore it
     if (chatState === 'attached') {
       const el = _fcEl();
@@ -3050,10 +5133,15 @@
 
   function scheduleHidePanel() {
     if (pinned) return;
+    if (shouldHoldChatFocusOpen()) return;
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
+      if (shouldHoldChatFocusOpen()) return;
       panelWrap.classList.remove('visible');
       panelWrap.classList.add('hidden-state');
+      document.body.classList.remove('panel-open');
+      const panelStateSelect = document.getElementById('panelStateSelect');
+      if (panelStateSelect && !pinned) panelStateSelect.value = 'closed';
 
       // Hide attached chat along with panel
       if (chatState === 'attached') {
@@ -3096,6 +5184,16 @@
   });
   _fcEl().addEventListener('mouseleave', () => {
     if (chatState === 'attached') scheduleHidePanel();
+  });
+
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('panel');
+    const chat = _fcEl();
+    const isChatFocus = chatState === 'attached' && panel && panel.classList.contains('chat-focus');
+    if (!isChatFocus) return;
+    if (Date.now() - chatFocusOpenedAt < 260) return;
+    if (panel.contains(e.target) || notchZone.contains(e.target) || chat.contains(e.target)) return;
+    collapseChatFocusFromOutside();
   });
 
   // ── RENAME SESSION TAB ───────────────────────

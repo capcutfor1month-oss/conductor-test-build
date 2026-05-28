@@ -18,7 +18,7 @@ Mark ✅ when built + tested + logged into project.md / LIMITATIONS.md.
 Phase A — ✅ COMPLETE
 Phase B — ✅ COMPLETE
 Phase C — ✅ COMPLETE
-Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–2 complete, Expanded Slice 3A complete)
+Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–15 complete)
 Phase E — NOT STARTED
 
 ### Locked Slices (current build)
@@ -27,6 +27,13 @@ Phase E — NOT STARTED
 - Expanded Actions Slice 2 (routing/sends/transport): PASS/LOCKED
 - Expanded Actions Slice 3A (plugin_bypass): PASS/LOCKED
 - Live Harness v1.5 (`app/harness.html`): present — product-preview shell
+- D Slice 9 — Strict Confirm Parser: PASS/LOCKED
+- D Slice 10 — GET /session/state: PASS/LOCKED
+- D Slice 11 — Natural Replies + Premium UI: PASS/LOCKED
+- D Slice 12 — Knowledge Gateway v1 (`POST /harness/orchestrate`): PASS/LOCKED
+- D Slice 13 — `/session/state` v1.5: PASS/LOCKED
+- D Slice 14 — Knowledge Explorer v1 (Build 6 + hardening): PASS/LOCKED
+- D Slice 15 — Creative Critic v1 (Build 7): PASS/LOCKED
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -546,6 +553,111 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | EA-S3A | `"PLUGIN_BYPASS": NeverDoDecision.ALLOW` | `rag/never_do_check.py` — fixes HARD_BLOCK blocker | ✅ |
 | EA-S3A | Strict bool parsing for `bypass` field | `tools/conductor_bridge.py` — `"false"`→False, `"true"`→True, invalid→400 | ✅ |
 | EA-S3A | Expanded Actions Slice 3A eval suite | `tests/phase_d_slice8_eval.py` — D94–D102, 9/9 PASS | ✅ |
+
+### Phase D — Slice 9 (Strict Confirm Parser) ✅
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S9 | `_parse_confirm_strict()` — accepts only JSON `true`, rejects all strings/other | `tools/conductor_bridge.py` | ✅ |
+| D-S9 | Wired to `track_delete`, `tracks_create_multiple`, `track_route`, `transport_record` | `tools/conductor_bridge.py` | ✅ |
+| D-S9 | Phase D Slice 9 eval suite | `tests/phase_d_slice9_eval.py` — D103–D108, 6/6 PASS | ✅ |
+
+### Phase D — Slice 10 (GET /session/state) ✅
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S10 | `GET /session/state` endpoint — live Ableton state snapshot | `tools/conductor_bridge.py` | ✅ |
+| D-S10 | `state_completeness` dict — `full` / `best_effort` / `not_available_v1` per field | `tools/conductor_bridge.py` | ✅ |
+| D-S10 | Phase D Slice 10 eval suite | `tests/phase_d_slice10_eval.py` — D109–D114, 6/6 PASS | ✅ |
+
+### Phase D — Slice 11 (Natural Replies + Premium UI) ✅
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S11 | `composeReply()` — ActionProof → natural assistant dialogue; no raw JSON/enums to user | `app/harness.js` | ✅ |
+| D-S11 | Premium UI shell — `app/harness.html` Live Harness v1.5 with debug info, session totals | `app/harness.html` | ✅ |
+| D-S11 | Phase D Slice 11 eval suite | `tests/phase_d_slice11_eval.py` — D115–D120, 56/56 PASS | ✅ |
+
+### Phase D — Slice 12 (Knowledge Gateway v1) ✅
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S12 | `POST /harness/orchestrate` endpoint — routes WRITE → action-ID, all other modes → knowledge answer | `tools/harness_server.py` | ✅ |
+| D-S12 | `call_knowledge_answer()` — context-enriched LLM call (Gemini + OpenAI/compatible); returns `type:"answer"` | `tools/harness_server.py` | ✅ |
+| D-S12 | `_call_bridge_get()` — bridge proxy; 3 context layers: context/pack, context/session, session/state | `tools/harness_server.py` | ✅ |
+| D-S12 | Phase D Slice 12 eval suite | `tests/phase_d_slice12_eval.py` — D121–D127, 7/7 PASS | ✅ |
+
+### Phase D — Slice 13 (/session/state v1.5) ✅
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S13 | `/session/state` v1.5 — per-track: `devices`, `clip_count`, `active_send_count`, `is_group_track`, `in_group` | `tools/conductor_bridge.py` | ✅ |
+| D-S13 | Calls 3–6 wrapped in `try/except Exception` — optional fields; failure silently omitted | `tools/conductor_bridge.py` | ✅ |
+| D-S13 | `state_completeness` v1.5 keys alongside legacy keys | `tools/conductor_bridge.py` | ✅ |
+| D-S13 | Phase D Slice 13 eval suite | `tests/phase_d_slice13_eval.py` — D128–D134, 7/7 PASS | ✅ |
+
+### Phase D — Slice 14 (Knowledge Explorer v1) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice14_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S14 | `_EXPLORER_MODES = {"MENTOR", "FREEFORM_GENERAL"}` — modes that trigger explorer path | `tools/harness_server.py` | ✅ |
+| D-S14 | `_STRUCTURAL_RE` — `re.compile(r"(?i)\b(candidates\|direction\|rationale\|session_facts_used\|assumptions\|source_hints\|actionable\|confidence\|question_type)\b")` | `tools/harness_server.py` | ✅ |
+| D-S14 | `call_knowledge_explorer()` — single LLM call: JSON with `answer` (user-facing) + `candidates` (internal). Parses structured response; hardens fallback path with regex structural detection | `tools/harness_server.py` | ✅ |
+| D-S14 | `_build_explorer_instructions(session_available)` — injects session-availability note into LLM context | `tools/harness_server.py` | ✅ |
+| D-S14 | Explorer routing in `_handle_orchestrate`: MENTOR/FREEFORM_GENERAL → explorer; READ/CLARIFY → direct; WRITE → action | `tools/harness_server.py` | ✅ |
+| D-S14 | Phase D Slice 14 eval suite | `tests/phase_d_slice14_eval.py` — D135–D142, 8/8 PASS | ✅ |
+
+**What Build 6 hardening fixed (final pass):**
+- `_INTERNAL_MARKERS` tuple (5 quoted-only markers) replaced with `_STRUCTURAL_RE` — catches all 9 schema keys in any form: quoted, unquoted, YAML-style, mixed-case, word-boundary
+- Added `startswith("```")` markdown-fence detection to `_looks_structural`
+- Previously: `candidates: cut EQ\ndirection: ...` (unquoted YAML) and `CANDIDATES:` (mixed-case) bypassed the guard and could leak raw schema text to the user — now caught
+- `_check_no_internal_exposure` in test helper updated to mirror production regex; Sub-D/E/F added to D137
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice13_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice12_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice11_eval.py` | 56/56 PASS |
+| `tests/phase_d_slice10_eval.py` | 6/6 PASS |
+| `tests/phase_d_slice9_eval.py` | 6/6 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+### Phase D — Slice 15 (Creative Critic v1 — Build 7) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice15_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S15 | `call_creative_critic()` — single LLM call evaluating Explorer candidates on 6 criteria (genericity, session_grounding, session_contradiction, goal_fit, practicality, unsupported_assumptions). Returns `({}, tokens)` on parse failure or invalid index. Never raises to caller. | `tools/harness_server.py` | ✅ |
+| D-S15 | `_build_critic_prompt()` + `_CRITIC_JSON_SCHEMA` — compact prompt with 6 evaluation criteria; JSON schema specifying `selected`, `kept`, `rejected`, `reasons`, `critic_summary` | `tools/harness_server.py` | ✅ |
+| D-S15 | `_compose_final_answer(explorer_answer, explorer_data, critic_data)` — deterministic composer (no LLM). Builds `"{direction}. {rationale}."` from Critic-selected candidate. Falls back to `explorer_answer` on empty critic, invalid index, missing direction, or `_STRUCTURAL_RE` fire. | `tools/harness_server.py` | ✅ |
+| D-S15 | `_handle_orchestrate` Explorer branch updated — calls `call_creative_critic` after `call_knowledge_explorer`, then `_compose_final_answer`. Sends `"text": final_text` (Critic-filtered) instead of raw `answer_text`. Critic failure is non-fatal. | `tools/harness_server.py` | ✅ |
+| D-S15 | Phase D Slice 15 eval suite | `tests/phase_d_slice15_eval.py` — D143–D153, 11/11 PASS | ✅ |
+
+**Known limitation (do not reopen Build 7):**
+`_compose_final_answer()` outputs `"{direction}. {rationale}."` — safe and correct but plain. Future polish: smoother sentence flow, session-fact weaving, co-producer voice. Track as: "Critic composer polish — post Build 7". New slice only.
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice13_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice12_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice11_eval.py` | 56/56 PASS |
+| `tests/phase_d_slice10_eval.py` | 6/6 PASS |
+| `tests/phase_d_slice9_eval.py` | 6/6 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
 
 ### Phase D — Expanded Actions Roadmap (not built — roadmap only)
 

@@ -62,3 +62,18 @@ When these files are touched or relevant, inspect the full touched function and 
 - Do not replace Claude workflow.
 - Do not redesign architecture during audits.
 - Do not skip reading safety-critical code to save tokens.
+
+## Backup Coding Audit
+
+When Claude Code session limits are exhausted and a backup assistant (ChatGPT, another Codex session, etc.) wrote production code, Codex must audit before any affected slice is marked PASS/LOCKED.
+
+**Trigger:** backup assistant edited any file outside `tests/` for a slice that is not yet locked.
+
+**Audit checklist:**
+- Verify the patch matches the build spec — no scope drift, no extra features added.
+- Confirm no PASS/LOCKED slice was touched.
+- Confirm no protected files (`conductor_bridge.py`, `rag/*`, `never_do_rules.md`, safety-critical files) were edited outside the explicit build scope.
+- Run the full test suite for the affected slice plus all prior-slice regressions.
+- Check that the handoff format was used (see `CLAUDE.md` — Backup Coding / Limit Exhausted Protocol).
+
+**Output:** standard PASS/FAIL report. If PASS, add an audit entry to `project.md` noting that backup coding occurred. If FAIL, list blockers; do not lock until fixed.

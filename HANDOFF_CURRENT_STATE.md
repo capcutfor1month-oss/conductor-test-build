@@ -169,6 +169,44 @@ All three were fixed May 2026. Pre-cleans are in place. These can recur if a tes
 
 ---
 
+## BACKUP CODING / LIMIT EXHAUSTED — HANDOFF TEMPLATE
+
+When Claude Code session limits are exhausted mid-build, fill in this template and paste it into the backup session (ChatGPT, Codex, etc.) along with the full context listed below.
+
+**Context to include (do not skip):**
+- This file (`HANDOFF_CURRENT_STATE.md`) and `tmp/HANDOFF_CURRENT_STATE.md`
+- `tmp/BUILD_PHASES.md` — so the backup assistant can see all locked slices
+- `git status --short` output
+- `git diff` output (all uncommitted changes)
+- Full test output for the current slice (even if passing)
+- The specific function(s) being edited, if the diff alone is ambiguous
+
+**Template — fill in before handing off:**
+
+```
+Build:               [e.g. Build 7 — Creative Critic v1]
+Last completed step: [e.g. "Added call_creative_critic(); edited _handle_orchestrate explorer branch"]
+Files changed:       [each file + one-line summary of what changed]
+Tests run:           [suite name + section count + PASS/FAIL for each]
+Current failure:     [exact test output, or "none — all passing"]
+Next intended edit:  [exact function / file / line Claude would have touched next]
+Do-not-touch list:   [files explicitly out of scope for this build]
+```
+
+**Backup assistant rules (pass these along):**
+- Work only from actual files, diffs, and test output — do not invent repo structure.
+- Ask for missing context before writing any patch.
+- Do not change scope; build only what was in progress.
+- Preserve all PASS/LOCKED slices — do not modify their code or tests.
+- Minimal patches only.
+- Do not mix in RAG, Premium UI, Auto Execute, Web/current info, PluginBridge, or Operator Cards unless that is the approved build.
+- If any production code is edited, Codex must audit the slice before it is marked PASS/LOCKED.
+
+Full protocol: `CLAUDE.md` → **Backup Coding / Limit Exhausted Protocol**
+Codex audit rules: `CODEX_REVIEWER.md` → **Backup Coding Audit**
+
+---
+
 ## CURRENT RE-ALIGNMENT STATUS
 
 > Added May 2026 after Codex re-alignment audit.

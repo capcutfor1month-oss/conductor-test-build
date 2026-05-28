@@ -891,4 +891,104 @@ D31 initially failed because `_make_proof()` test helper created an in-memory di
 
 ---
 
-*Last updated: May 2026 — Phase D through Expanded Slice 3A complete (ActionProof, readback, feedback, undo, never-do gate, track management, routing/sends/transport, plugin bypass). Next: ask user — D6 (feedback UI), Expanded Slice 3B (plugin_param), or CoProducer translation layer.*
+### Audit 9 — May 2026 (Live Harness Slices 9–14 / Knowledge Explorer v1)
+
+**Phase D Slice 9 — Strict Confirm Parser (D103–D108):**
+- `_parse_confirm_strict()` in `tools/conductor_bridge.py` — accepts JSON `true` only; rejects all string forms (`"true"`, `"false"`, `"yes"`)
+- Wired to `track_delete`, `tracks_create_multiple`, `track_route`, `transport_record`
+- `tests/phase_d_slice9_eval.py` — **6/6 PASS**
+
+**Phase D Slice 10 — GET /session/state (D109–D114):**
+- `GET /session/state` endpoint in `tools/conductor_bridge.py` — live Ableton snapshot
+- `state_completeness` dict with `full` / `best_effort` / `not_available_v1` per field
+- `tests/phase_d_slice10_eval.py` — **6/6 PASS**
+
+**Phase D Slice 11 — Natural Replies + Premium UI (D115–D120):**
+- `composeReply()` in `app/harness.js` — ActionProof → natural assistant dialogue; no raw JSON/enums surfaced
+- Premium UI shell: Live Harness v1.5 (`app/harness.html`) — debug info, session totals, forbidden wording absent
+- `tests/phase_d_slice11_eval.py` — **56/56 PASS**
+
+**Phase D Slice 12 — Knowledge Gateway v1 (D121–D127):**
+- `POST /harness/orchestrate` in `tools/harness_server.py` — WRITE modes → action-ID, all others → knowledge answer
+- `call_knowledge_answer()` — context-enriched free-text LLM call; `_call_bridge_get()` assembles 3 context layers
+- `tests/phase_d_slice12_eval.py` — **7/7 PASS**
+
+**Phase D Slice 13 — /session/state v1.5 (D128–D134):**
+- Per-track v1.5 fields: `devices`, `clip_count`, `active_send_count`, `is_group_track`, `in_group`
+- Calls 3–6 wrapped in `try/except Exception` — optional fields; failure silently absent, never 500
+- `state_completeness` v1.5 keys alongside all legacy v1 keys unchanged
+- `tests/phase_d_slice13_eval.py` — **7/7 PASS**
+
+**Phase D Slice 14 — Knowledge Explorer v1 (D135–D142): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice14_eval.py`.
+
+- `_EXPLORER_MODES = {"MENTOR", "FREEFORM_GENERAL"}` — modes that trigger structured candidate generation
+- `call_knowledge_explorer()` — single LLM call requesting JSON `answer` (user-facing) + `candidates` (internal). Gemini: `response_mime_type: application/json`; OpenAI: `json_object`; openai_compatible: no response_format
+- `_build_explorer_instructions(session_available)` — injects session-availability honesty note
+- Explorer routing in `_handle_orchestrate`: MENTOR/FREEFORM_GENERAL → explorer; READ/CLARIFY → direct; WRITE → action
+- `explorer` key in response is internal metadata — not surfaced in chat UI
+- `tests/phase_d_slice14_eval.py` — **8/8 PASS**
+
+**Build 6 hardening (final pass — same session):**
+- Problem: `_INTERNAL_MARKERS` tuple (5 quoted markers) did not catch unquoted YAML-style (`candidates: ...`), mixed-case (`CANDIDATES:`), or markdown-fenced output — raw schema could leak to user
+- Fix: replaced `_INTERNAL_MARKERS` + `any()` with `_STRUCTURAL_RE = re.compile(r"(?i)\b(candidates|direction|rationale|session_facts_used|assumptions|source_hints|actionable|confidence|question_type)\b")` — case-insensitive, word-boundary, all 9 markers
+- Added `raw_stripped.startswith("```")` fence detection
+- D137 Sub-D (YAML-style), Sub-E (fenced partial schema), Sub-F (mixed-case) added to prove all three paths return fallback, not raw schema
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice13_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice12_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice11_eval.py` | 56/56 PASS |
+| `tests/phase_d_slice10_eval.py` | 6/6 PASS |
+| `tests/phase_d_slice9_eval.py` | 6/6 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+---
+
+### Audit 10 — May 2026 (Build 7 — Creative Critic v1 / D Slice 15)
+
+**Phase D Slice 15 — Creative Critic v1 (D143–D153): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice15_eval.py`.
+
+- `call_creative_critic()` in `tools/harness_server.py` — single LLM call evaluating Explorer candidates on 6 criteria: genericity, session_grounding, session_contradiction, goal_fit, practicality, unsupported_assumptions. Returns `({}, tokens)` on parse failure or invalid selection index. Never raises to caller.
+- `_build_critic_prompt()` + `_CRITIC_JSON_SCHEMA` — 6-criterion evaluation prompt; JSON schema specifying `selected`, `kept`, `rejected`, `reasons`, `critic_summary`.
+- `_compose_final_answer(explorer_answer, explorer_data, critic_data)` — deterministic composer (no LLM). Reads `critic_data["selected"]`, validates index against candidates length, builds `"{direction}. {rationale}."`. Safety-guarded by `_STRUCTURAL_RE`. Falls back to `explorer_answer` on empty critic, invalid/out-of-range index, missing direction, or structural marker in composed text.
+- `_handle_orchestrate` Explorer branch updated — calls `call_creative_critic` after `call_knowledge_explorer`, then `_compose_final_answer`. Sends `"text": final_text` (Critic-filtered). `"explorer"` and `"critic"` fields remain internal. Critic failure non-fatal; always falls back to `explorer_answer`.
+- `tests/phase_d_slice15_eval.py` — **11/11 PASS** (D143–D153)
+  - D152: core filtering proof — 5 assertions proving rejected candidate cannot control the final answer
+  - D153: real `call_creative_critic()` parser — 7 sub-cases (malformed, missing key, out-of-range, valid, `_compose_final_answer` edge cases)
+
+**Backup Coding Protocol docs added (same session):**
+- `CLAUDE.md` (TEST-BUILD) — added "BACKUP CODING / LIMIT EXHAUSTED PROTOCOL" section: required context checklist, backup assistant rules, Graphify usage rules, handoff format template, recovery rule
+- `CODEX_REVIEWER.md` — added "Backup Coding Audit" section: trigger, 5-item checklist, output format
+- `HANDOFF_CURRENT_STATE.md` (root) + `tmp/HANDOFF_CURRENT_STATE.md` — handoff template, filled Build 7 block, known limitation note, "Critic composer polish" roadmap item
+
+**Known limitation (do not reopen Build 7):**
+`_compose_final_answer()` outputs `"{direction}. {rationale}."` — safe and correct but intentionally plain. Future: smoother sentence flow, session-fact weaving, co-producer voice. Track as "Critic composer polish — post Build 7". New slice only.
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice13_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice12_eval.py` | 7/7 PASS |
+| `tests/phase_d_slice11_eval.py` | 56/56 PASS |
+| `tests/phase_d_slice10_eval.py` | 6/6 PASS |
+| `tests/phase_d_slice9_eval.py` | 6/6 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+*Last updated: May 2026 — Phase D through Slice 15 (Creative Critic v1 / Build 7) complete. Slices 9–15 and Expanded Actions 1–3A all PASS/LOCKED. Next: Build 8 — Operator Cards v2 / Plugin Knowledge Routing (card-aware Critic). See tmp/HANDOFF_CURRENT_STATE.md.*
