@@ -261,7 +261,8 @@ def run_d143():
     critic_call_args = {}
 
     def _capture_critic(candidates, question_text, session_context,
-                        provider, model, api_key, base_url=None, card_context=""):
+                        provider, model, api_key, base_url=None, card_context="",
+                        knowledge_status_context=""):
         critic_call_args["candidates"]    = candidates
         critic_call_args["question_text"] = question_text
         return _CANNED_CRITIC_DATA, _CANNED_CRITIC_TOKENS
@@ -347,7 +348,8 @@ def run_d144():
     critic_called = {"count": 0}
 
     def _capture_critic(candidates, question_text, session_context,
-                        provider, model, api_key, base_url=None, card_context=""):
+                        provider, model, api_key, base_url=None, card_context="",
+                        knowledge_status_context=""):
         critic_called["count"] += 1
         return _CANNED_CRITIC_DATA, _CANNED_CRITIC_TOKENS
 

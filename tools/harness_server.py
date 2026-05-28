@@ -164,6 +164,34 @@ def _extract_operator_card_context(message_pack_text, max_chars=3000):
     return ""
 
 
+def _extract_knowledge_status_context(message_pack_text, max_chars=600):
+    """
+    Extract the ## KNOWLEDGE STATUS block from /context/pack text.
+
+    Build 12: passes the knowledge gap signal directly into Creative Critic so
+    the knowledge_evidence criterion is grounded in actual context, not only
+    whatever Explorer chose to carry into candidate assumptions.
+    Returns "" when no KNOWLEDGE STATUS block is present (verified card or
+    no plugin recognized — both mean the Critic needs no gap signal).
+    """
+    if not message_pack_text:
+        return ""
+
+    lines = str(message_pack_text).splitlines()
+    for i, line in enumerate(lines):
+        if line.strip().upper().startswith("## KNOWLEDGE STATUS"):
+            block = [line]
+            for follow in lines[i + 1:]:
+                # Stop at the next top-level markdown section.
+                if follow.startswith("## "):
+                    break
+                block.append(follow)
+            status = "\n".join(block).strip()
+            return status[:max_chars]
+
+    return ""
+
+
 def _load_system_prompt(project_root):
     """Load app/system_prompt.md (Conductor identity + context rules). Returns '' on failure."""
     path = os.path.join(project_root, "app", "system_prompt.md")
@@ -638,12 +666,17 @@ Respond ONLY with valid JSON — no markdown fences, no preamble:
 }"""
 
 
-def _build_critic_prompt(candidates, question_text, session_context, card_context=""):
+def _build_critic_prompt(candidates, question_text, session_context, card_context="",
+                         knowledge_status_context=""):
     """
     Build the compact critic evaluation prompt.
     candidates: list of candidate dicts from the Explorer.
     session_context: formatted session state block or "".
     card_context: optional Operator Card snippet already present in /context/pack.
+    knowledge_status_context: optional ## KNOWLEDGE STATUS block from /context/pack
+        (Build 12). When present, tells Critic the plugin is recognized but has no
+        Operator Card — grounds the knowledge_evidence criterion in actual context.
+        Internal only; never surfaced in user-facing output.
     """
     parts = [
         "## Creative Critic",
@@ -660,6 +693,17 @@ def _build_critic_prompt(candidates, question_text, session_context, card_contex
             "## Operator Card Context",
             "Use this as hard plugin/tool context. Penalize or reject candidates that violate Operator Card Never Do rules, Risky Writes guidance, plugin identity, or supported controls. Do not quote this block in the user-facing answer.",
             card_context.strip(),
+        ]
+    if knowledge_status_context:
+        parts += [
+            "",
+            "## Plugin Knowledge Context",
+            "The plugin below was recognized in the producer's message but no Operator Card exists for it.",
+            "Apply the knowledge_evidence criterion:",
+            "- Penalize candidates that make confident plugin-specific parameter or workflow claims without acknowledging the knowledge gap.",
+            "- Reward candidates that note the gap and frame plugin-specific guidance as general principles.",
+            "- Do not surface this block in the user-facing answer.",
+            knowledge_status_context.strip(),
         ]
     parts += ["", "Candidates:"]
     for i, c in enumerate(candidates):
@@ -702,6 +746,7 @@ def call_creative_critic(
     api_key,
     base_url=None,
     card_context="",
+    knowledge_status_context="",
 ):
     """
     Creative Critic v1: single LLM call that evaluates Explorer candidates and
@@ -710,7 +755,7 @@ def call_creative_critic(
     Criteria evaluated per candidate:
       genericity, session_grounding, session_contradiction,
       goal_fit, practicality, unsupported_assumptions,
-      operator_card_compliance
+      operator_card_compliance, knowledge_evidence
 
     Returns (critic_data: dict, tokens: dict).
       critic_data — {"selected": int, "kept": [...], "rejected": [...],
@@ -725,7 +770,10 @@ def call_creative_critic(
     if not candidates:
         return {}, {"input": 0, "output": 0, "total": 0}
 
-    prompt = _build_critic_prompt(candidates, question_text, session_context, card_context)
+    prompt = _build_critic_prompt(
+        candidates, question_text, session_context, card_context,
+        knowledge_status_context=knowledge_status_context,
+    )
 
     if provider == "gemini":
         url = (
@@ -1092,6 +1140,9 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
 
         # Build 8: pass the existing Operator Card snippet to Creative Critic.
         operator_card_context = _extract_operator_card_context(message_pack_text)
+        # Build 12: pass the ## KNOWLEDGE STATUS block to Creative Critic so
+        # knowledge_evidence is grounded in actual context, not only Explorer assumptions.
+        knowledge_status_context = _extract_knowledge_status_context(message_pack_text)
 
         try:
             if mode in _EXPLORER_MODES:
@@ -1116,6 +1167,7 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
                             session_state_block,
                             self.provider, self.model, self.api_key, self.base_url,
                             card_context=operator_card_context,
+                            knowledge_status_context=knowledge_status_context,
                         )
                     except Exception:
                         # Critic failure is non-fatal — explorer answer unchanged

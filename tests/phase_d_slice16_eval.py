@@ -315,7 +315,8 @@ def run_d157():
         return _EXPLORER_ANSWER, _EXPLORER_DATA, _TOKENS
 
     def fake_critic(candidates, question_text, session_context,
-                    provider, model, api_key, base_url=None, card_context=""):
+                    provider, model, api_key, base_url=None, card_context="",
+                    knowledge_status_context=""):
         captured["card_context"] = card_context
         return {
             "selected": 1,
@@ -364,7 +365,8 @@ def run_d158():
         return _EXPLORER_ANSWER, _EXPLORER_DATA, _TOKENS
 
     def fake_critic(candidates, question_text, session_context,
-                    provider, model, api_key, base_url=None, card_context=""):
+                    provider, model, api_key, base_url=None, card_context="",
+                    knowledge_status_context=""):
         captured["card_context"] = card_context
         return {"selected": 1, "kept": [1], "rejected": [0]}, _TOKENS
 
