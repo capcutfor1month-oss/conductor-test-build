@@ -585,7 +585,7 @@ def build_message_pack(message: str) -> dict:
     if _guards_changed:
         # Rebuild injected list + summary_text to reflect guard changes.
         # Mirrors the format used by routed_retriever.retrieve().
-        _new_injected = [i for i in retrieval.retrieved if i.injected]
+        _new_injected = [i for i in retrieval.injected if i.injected]
         if _new_injected:
             _sumlines = []
             for _i in _new_injected:

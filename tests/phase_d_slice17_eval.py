@@ -306,8 +306,11 @@ def run_d166():
 
 def run_d167():
     """
-    Guard rebuild — after Guard A fires, retrieval.injected and
-    retrieval.summary_text reflect the updated state, not the stale pre-guard state.
+    Guard rebuild — after Guard A fires:
+    (a) retrieval.injected and retrieval.summary_text reflect updated state.
+    (b) Preserved injected order follows retrieval.injected (weight-sorted),
+        NOT retrieval.retrieved (raw ChromaDB order).
+    (c) summary_text line order matches the preserved injected order.
     """
     errors = []
 
@@ -316,7 +319,18 @@ def run_d167():
         text="Pro-Q 4 full body text that should not appear in summary",
         injected=True,
         rescue_mode=None,
+        label="[plugin]",
     )
+    # item_c — higher weight, appears FIRST in injected (weight-sorted)
+    item_c = _make_evidence_item(
+        collection="producer_memory_index",
+        id_="mem_456",
+        text="Compress drums with 4:1 ratio for this genre",
+        injected=True,
+        rescue_mode=None,
+        label="[producer]",
+    )
+    # other_item — lower weight, appears SECOND in injected (weight-sorted)
     other_item = _make_evidence_item(
         collection="producer_memory_index",
         id_="mem_123",
@@ -325,11 +339,25 @@ def run_d167():
         rescue_mode=None,
         label="[producer]",
     )
-    mock_retrieval = _make_retrieval([proq4_item, other_item])
+
+    # Build retrieval with intentionally DIFFERENT ordering:
+    #   retrieved = [proq4_item, other_item, item_c]  ← raw ChromaDB order
+    #   injected  = [item_c, other_item, proq4_item]  ← weight-sorted: c first, proq4 last
+    # After Guard A removes proq4_item the correct result is [item_c, other_item].
+    # Rebuilding from retrieval.retrieved would give [other_item, item_c] (wrong order).
+    from rag.routed_retriever import RetrievalResult
+    mock_retrieval = RetrievalResult()
+    mock_retrieval.retrieved   = [proq4_item, other_item, item_c]
+    mock_retrieval.injected    = [item_c, other_item, proq4_item]   # C before B intentionally
+    mock_retrieval.freeform    = False
+    mock_retrieval.mode        = "MENTOR"
+    mock_retrieval.summary_text = (
+        "[producer] Compress drums with 4:1 ratio for this genre\n"
+        "[producer] I prefer a high-pass filter at 80Hz on all non-bass tracks\n"
+        "[plugin] Pro-Q 4 full body text that should not appear in summary"
+    )
 
     captured_retrieval = {}
-
-    original_routed = cpb._routed_retrieve
 
     def _capture_and_return(msg, mode, **kw):
         captured_retrieval["obj"] = mock_retrieval
@@ -349,26 +377,58 @@ def run_d167():
     if r is None:
         errors.append("retrieval object not captured")
     else:
-        # retrieval.injected must NOT contain the excluded proq4_item
         injected_ids = [i.id for i in r.injected]
+
+        # (a) Excluded item must not be in retrieval.injected
         if "vault_plugin_fabfilter_pro_q_4" in injected_ids:
             errors.append("retrieval.injected still contains excluded item after guard rebuild")
-        # retrieval.injected must still contain the other item
+
+        # (a) Both surviving items must still be present
+        if "mem_456" not in injected_ids:
+            errors.append("retrieval.injected lost item_c (mem_456)")
         if "mem_123" not in injected_ids:
-            errors.append("retrieval.injected lost the non-excluded item")
-        # summary_text must not contain the excluded Pro-Q 4 full body
+            errors.append("retrieval.injected lost other_item (mem_123)")
+
+        # (b) Ordering: item_c (mem_456) must come BEFORE other_item (mem_123).
+        #     This proves iteration is over retrieval.injected, not retrieval.retrieved.
+        #     (In retrieval.retrieved order other_item is index 1, item_c is index 2 — reversed.)
+        if len(injected_ids) >= 2:
+            if injected_ids[0] != "mem_456":
+                errors.append(
+                    f"Injection order wrong: expected mem_456 (item_c) first, got {injected_ids[0]!r}. "
+                    "Guard rebuild must iterate retrieval.injected (weight-sorted), "
+                    "not retrieval.retrieved (raw ChromaDB order)."
+                )
+            if injected_ids[1] != "mem_123":
+                errors.append(
+                    f"Injection order wrong: expected mem_123 (other_item) second, got {injected_ids[1]!r}."
+                )
+
+        # (a) summary_text must not contain the excluded Pro-Q 4 body
         if "Pro-Q 4 full body text" in r.summary_text:
             errors.append("retrieval.summary_text still contains excluded card text")
-        # summary_text must contain the other item
+
+        # (a) summary_text must contain both surviving items
+        if "Compress drums" not in r.summary_text:
+            errors.append("retrieval.summary_text missing item_c text")
         if "high-pass filter" not in r.summary_text:
-            errors.append("retrieval.summary_text lost non-excluded item text")
+            errors.append("retrieval.summary_text missing other_item text")
+
+        # (c) summary_text follows injected order: item_c before other_item
+        pos_c     = r.summary_text.find("Compress drums")
+        pos_other = r.summary_text.find("high-pass filter")
+        if pos_c != -1 and pos_other != -1 and pos_c > pos_other:
+            errors.append(
+                "summary_text order wrong: 'Compress drums' (item_c, higher weight) "
+                "should appear before 'high-pass filter' (other_item, lower weight)."
+            )
 
     if errors:
         for e in errors:
             print(f"  \033[91m✗\033[0m [D167] {e}")
         print(f"  D167: FAIL")
         return False
-    print(f"  \033[92m✅\033[0m [D167] Guard rebuild: retrieval.injected and summary_text reflect guard changes")
+    print(f"  \033[92m✅\033[0m [D167] Guard rebuild: injected order preserved from retrieval.injected (weight-sorted)")
     print(f"  D167: PASS")
     return True
 
