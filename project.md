@@ -991,4 +991,87 @@ D31 initially failed because `_make_proof()` test helper created an in-memory di
 
 ---
 
-*Last updated: May 2026 — Phase D through Slice 15 (Creative Critic v1 / Build 7) complete. Slices 9–15 and Expanded Actions 1–3A all PASS/LOCKED. Next: Build 8 — Operator Cards v2 / Plugin Knowledge Routing (card-aware Critic). See tmp/HANDOFF_CURRENT_STATE.md.*
+---
+
+### Audit 11 — May 2026 (Build 8 — Card-aware Creative Critic v1 / D Slice 16)
+
+**Phase D Slice 16 — Card-aware Creative Critic v1 (D154–D161): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice16_eval.py`.
+
+- `_extract_operator_card_context(message_pack_text)` in `tools/harness_server.py` — scans `/context/pack` text for `## OPERATOR CARD` block, returns it (up to 3000 chars) for forwarding to Critic.
+- `call_creative_critic()` updated — accepts `card_context=""` kwarg. When present, `_build_critic_prompt()` injects an `## Operator Card Context` section instructing the Critic to penalize or reject candidates violating Operator Card Never Do rules, Risky Writes, plugin identity, or supported controls.
+- `operator_card_compliance` added as 7th evaluation criterion in the Critic prompt.
+- `_handle_orchestrate` updated — calls `_extract_operator_card_context(message_pack_text)` and passes result to `call_creative_critic` as `card_context`.
+- `tests/phase_d_slice16_eval.py` — **8/8 PASS** (D154–D161)
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+### Audit 12 — May 2026 (Builds 9 + 10 — Operator Card v2 Schema + Plugin Knowledge Routing v1 / D Slice 17)
+
+**Phase D Slice 17 — Plugin Knowledge Routing v1 (D162–D168 + D162b): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice17_eval.py` or `tests/test_seeder_safety.py`.
+
+**Build 9 — Operator Card v2 Schema & Content Readiness:**
+- `seed_operator_cards()` in `tools/conductor_bridge.py` — unsafe stale-ID deletion removed. Seeder is upsert-only; `delete()` is never called on `plugin_operator_index`. Stable IDs: `vault_plugin_{card_id}`.
+- YAML frontmatter added to all 4 operator cards: `card_id`, `display_name`, `type`, `risk_level`, `verification_status`, `collection`, `tags`, `operator_card_triggers`.
+- `tests/test_seeder_safety.py` — 3/3 PASS (B9-S1, B9-S2).
+
+**Build 10 — Plugin Knowledge Routing v1:**
+- `_get_stable_card_id(card_file)` — reads YAML frontmatter `card_id`, returns `vault_plugin_{card_id}`. Fails closed (returns `None`) if file missing, no frontmatter, or no `card_id`.
+- Guard A: when file-based snippet for plugin X is injected, the ChromaDB full-body card for X is excluded from the Memory section (`dedup_file_path_is_authoritative`).
+- Guard B: when no plugin is name-detected, BM25-rescued plugin cards are blocked (`no_plugin_detected_bm25_rescue_blocked`). Semantic hits still pass.
+- Guard rebuild fix: `_new_injected` iterates `retrieval.injected` (weight-sorted), not `retrieval.retrieved` (raw ChromaDB order).
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/test_seeder_safety.py` | 3/3 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile rag/context_pack_builder.py` | PASS |
+
+---
+
+### Audit 13 — May 2026 (Build 11 — Plugin Knowledge Trust Signals / D Slice 18)
+
+**Phase D Slice 18 — Plugin Knowledge Trust Signals (D169–D176): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice18_eval.py`.
+
+- `get_known_plugin_name_for_message(message)` in `rag/risk_taxonomy.py` — scans all 61 inventory entries (has_card=True or False), returns canonical plugin name or `""`. Used to detect "recognized plugin with no card" case.
+- `_check_plugin_knowledge_status(message, card_file)` in `rag/context_pack_builder.py` — returns `("verified", name)` when card present, `("missing", name)` when plugin recognized but no card, `("none", "")` when no plugin recognized.
+- `## KNOWLEDGE STATUS` block injected into message pack when status is `"missing"`. Absent when card is present or no plugin is recognized. Tells Explorer/Critic: "answer from general knowledge only; flag plugin-specific claims as unverified."
+- `knowledge_gap` rule added to `_build_explorer_instructions()` — when `## KNOWLEDGE STATUS` present, populate `assumptions` and set `confidence ≤ 0.5` for plugin-specific candidates.
+- `knowledge_evidence` criterion added to `_build_critic_prompt()` — penalize ungrounded plugin-specific claims when no Operator Card is available.
+- `tests/phase_d_slice18_eval.py` — **8/8 PASS** (D169–D176)
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/test_seeder_safety.py` | 3/3 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile rag/risk_taxonomy.py rag/context_pack_builder.py tools/harness_server.py` | PASS |
+
+---
+
+*Last updated: May 2026 — Phase D through Slice 18 (Build 11 — Plugin Knowledge Trust Signals) complete. Slices 9–18 and Expanded Actions 1–3A all PASS/LOCKED. Builds 1–11 locked.*

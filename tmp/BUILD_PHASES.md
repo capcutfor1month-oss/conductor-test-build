@@ -18,7 +18,7 @@ Mark ✅ when built + tested + logged into project.md / LIMITATIONS.md.
 Phase A — ✅ COMPLETE
 Phase B — ✅ COMPLETE
 Phase C — ✅ COMPLETE
-Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–15 complete)
+Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–18 complete)
 Phase E — NOT STARTED
 
 ### Locked Slices (current build)
@@ -34,6 +34,9 @@ Phase E — NOT STARTED
 - D Slice 13 — `/session/state` v1.5: PASS/LOCKED
 - D Slice 14 — Knowledge Explorer v1 (Build 6 + hardening): PASS/LOCKED
 - D Slice 15 — Creative Critic v1 (Build 7): PASS/LOCKED
+- D Slice 16 — Card-aware Creative Critic v1 (Build 8): PASS/LOCKED
+- D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10): PASS/LOCKED
+- D Slice 18 — Plugin Knowledge Trust Signals (Build 11): PASS/LOCKED
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -656,6 +659,83 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | `tests/test_vault_integrity.py` | 15/15 PASS |
 | `node --check app/harness.js` | PASS |
 | `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+### Phase D — Slice 16 (Card-aware Creative Critic v1 — Build 8) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice16_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S16 | `_extract_operator_card_context(message_pack_text)` — extracts `## OPERATOR CARD` block from `/context/pack` text and forwards it to Creative Critic as `card_context` | `tools/harness_server.py` | ✅ |
+| D-S16 | `call_creative_critic()` updated — accepts `card_context=""` kwarg; `_build_critic_prompt()` injects Operator Card section when present; `operator_card_compliance` added as 7th evaluation criterion | `tools/harness_server.py` | ✅ |
+| D-S16 | Phase D Slice 16 eval suite | `tests/phase_d_slice16_eval.py` — D154–D161, 8/8 PASS | ✅ |
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+### Phase D — Slice 17 (Plugin Knowledge Routing v1 — Builds 9 + 10) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice17_eval.py` or `tests/test_seeder_safety.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S17 | Build 9: `seed_operator_cards()` unsafe stale-ID deletion removed. Seeder is upsert-only; never deletes unrelated IDs from `plugin_operator_index`. | `tools/conductor_bridge.py` | ✅ |
+| D-S17 | Build 9: Operator Card YAML frontmatter (`card_id`, `display_name`, `type`, `risk_level`, `verification_status`, `collection`, `tags`, `operator_card_triggers`) added to all 4 cards. | `conductor-vault/plugins/*.md` | ✅ |
+| D-S17 | Build 10: `_get_stable_card_id(card_file)` — reads frontmatter `card_id`, returns `vault_plugin_{card_id}`. Fails closed. | `rag/context_pack_builder.py` | ✅ |
+| D-S17 | Build 10 Guard A: when `_detect_plugin()` fires for plugin X, the ChromaDB full-body card for X is excluded from the Memory section (file-based snippet is authoritative). | `rag/context_pack_builder.py` | ✅ |
+| D-S17 | Build 10 Guard B: when no plugin is name-detected, BM25-rescued plugin cards (`rescue_mode="bm25"`) are blocked. Semantic hits still allowed. | `rag/context_pack_builder.py` | ✅ |
+| D-S17 | Build 10 guard rebuild fix: `_new_injected` iterates `retrieval.injected` (weight-sorted), not `retrieval.retrieved` (raw order). | `rag/context_pack_builder.py` | ✅ |
+| D-S17 | Phase D Slice 17 eval suite | `tests/phase_d_slice17_eval.py` — D162–D168 + D162b, 8/8 PASS | ✅ |
+| D-S17 | Seeder safety suite | `tests/test_seeder_safety.py` — B9-S1 + B9-S2, 3/3 PASS | ✅ |
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/test_seeder_safety.py` | 3/3 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile rag/context_pack_builder.py` | PASS |
+
+---
+
+### Phase D — Slice 18 (Plugin Knowledge Trust Signals — Build 11) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice18_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S18 | `get_known_plugin_name_for_message(message)` — scans all 61 inventory entries (has_card or not), returns canonical plugin name or `""`. | `rag/risk_taxonomy.py` | ✅ |
+| D-S18 | `_check_plugin_knowledge_status(message, card_file)` — returns `("verified", name)` / `("missing", name)` / `("none", "")`. | `rag/context_pack_builder.py` | ✅ |
+| D-S18 | `## KNOWLEDGE STATUS` block injection — present only when a known plugin is recognized but has no Operator Card. Absent when card is present or no plugin recognized. | `rag/context_pack_builder.py` | ✅ |
+| D-S18 | Explorer `knowledge_gap` rule — when `## KNOWLEDGE STATUS` present, populate `assumptions` and set `confidence ≤ 0.5` for plugin-specific candidates. | `tools/harness_server.py` | ✅ |
+| D-S18 | Critic `knowledge_evidence` criterion — penalize ungrounded plugin-specific claims when no Operator Card is available. | `tools/harness_server.py` | ✅ |
+| D-S18 | Phase D Slice 18 eval suite | `tests/phase_d_slice18_eval.py` — D169–D176, 8/8 PASS | ✅ |
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `tests/phase_d_slice14_eval.py` | 8/8 PASS |
+| `tests/test_seeder_safety.py` | 3/3 PASS |
+| `tests/test_vault_integrity.py` | 15/15 PASS |
+| `node --check app/harness.js` | PASS |
+| `python3 -m py_compile rag/risk_taxonomy.py rag/context_pack_builder.py tools/harness_server.py` | PASS |
 
 ---
 
