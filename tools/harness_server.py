@@ -154,8 +154,8 @@ def _extract_operator_card_context(message_pack_text, max_chars=3000):
         if line.strip().upper().startswith("## OPERATOR CARD"):
             block = [line]
             for follow in lines[i + 1:]:
-                # Stop at the next top-level markdown section.
-                if follow.startswith("## ") and not follow.strip().upper().startswith("## OPERATOR CARD"):
+                # Stop at ANY next top-level markdown section (including adjacent cards).
+                if follow.startswith("## "):
                     break
                 block.append(follow)
             card = "\n".join(block).strip()

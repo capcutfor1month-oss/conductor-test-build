@@ -241,10 +241,11 @@ def run_d154():
 
 @section("D155")
 def run_d155():
-    print("=== Section D155: card context included in critic prompt ===")
+    print("=== Section D155: card context included in critic prompt + adjacent-card isolation ===")
     hs_mod = importlib.import_module("tools.harness_server")
     errors = []
 
+    # ── Sub-case A: single card ───────────────────────────────────────────────
     card = hs_mod._extract_operator_card_context(_mentor_pack_with_card()["pack"])
     prompt = hs_mod._build_critic_prompt(
         _EXPLORER_DATA["candidates"],
@@ -253,13 +254,32 @@ def run_d155():
         card_context=card,
     )
     if "## Operator Card Context" not in prompt:
-        errors.append("critic prompt missing Operator Card Context block")
+        errors.append("[A] critic prompt missing Operator Card Context block")
     if "OPERATOR CARD — Ozone 12" not in prompt:
-        errors.append("critic prompt missing Ozone card content")
+        errors.append("[A] critic prompt missing Ozone card content")
     if "aggressive maximizer gain" not in prompt:
-        errors.append("critic prompt missing Never Do text")
+        errors.append("[A] critic prompt missing Never Do text")
     if "## OTHER CONTEXT" in card:
-        errors.append("card extractor leaked following non-card context")
+        errors.append("[A] card extractor leaked following non-card context")
+
+    # ── Sub-case B: adjacent cards — extractor must stop at first card boundary ─
+    adjacent_pack = (
+        "## MESSAGE PACK\n"
+        "Mode: MENTOR\n\n"
+        "## OPERATOR CARD — Ozone 12\n"
+        "Never Do:\n"
+        "- Avoid aggressive maximizer gain on an already-hot master.\n\n"
+        "## OPERATOR CARD — Pro-Q 4\n"
+        "Never Do:\n"
+        "- Never set Q above 4.0 unless surgical notch.\n"
+    )
+    extracted = hs_mod._extract_operator_card_context(adjacent_pack)
+    if "OPERATOR CARD — Ozone 12" not in extracted:
+        errors.append("[B] adjacent-card pack: Ozone 12 card not extracted")
+    if "OPERATOR CARD — Pro-Q 4" in extracted:
+        errors.append("[B] adjacent-card pack: Pro-Q 4 card leaked into extraction (stop condition broken)")
+    if "surgical notch" in extracted:
+        errors.append("[B] adjacent-card pack: Pro-Q 4 content leaked into extraction")
 
     return errors
 
