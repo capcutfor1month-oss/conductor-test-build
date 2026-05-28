@@ -242,6 +242,29 @@ def get_card_file_for_message(message: str) -> str:
     return ""
 
 
+def get_known_plugin_name_for_message(message: str) -> str:
+    """
+    Return canonical plugin name if ANY known plugin (has_card=True or False)
+    is mentioned in the message. Returns "" if none recognized.
+
+    Unlike get_card_file_for_message() this does NOT require has_card=True —
+    it catches all 61 inventory entries.
+
+    Build 11: used by context_pack_builder to detect the "recognized plugin
+    with no operator card" case so a ## KNOWLEDGE STATUS block can be injected.
+    """
+    msg = message.lower()
+    for p in _load_plugins():
+        terms = (
+            [p["name"].lower()]
+            + [a.lower() for a in p.get("natural_names", []) if a]
+            + [a.lower() for a in p.get("aliases", []) if a]
+        )
+        if any(t in msg for t in terms):
+            return p["name"]
+    return ""
+
+
 def get_plugin_by_natural_name(name: str) -> Optional[dict]:
     """
     Return plugin dict for a given name, natural_name, or alias (case-insensitive).

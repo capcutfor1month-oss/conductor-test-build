@@ -43,6 +43,7 @@ sys.path.insert(0, _ROOT)
 from rag.request_mode_classifier import classify
 from rag.routed_retriever import retrieve as _routed_retrieve
 from rag.risk_taxonomy import get_card_file_for_message as _get_card_file
+from rag.risk_taxonomy import get_known_plugin_name_for_message as _get_known_plugin_name
 from rag.memory_schema import NO_STRONG_MEMORY_MSG as _NO_MEMORY_MSG
 
 # ── PATHS ─────────────────────────────────────────────────────────────────────
@@ -469,6 +470,31 @@ def _get_stable_card_id(card_file: str) -> "str | None":
     return "vault_plugin_" + m.group(1)
 
 
+def _check_plugin_knowledge_status(message: str, card_file: str) -> tuple:
+    """
+    Classify the plugin knowledge state for this message.
+
+    Returns:
+      ("verified", plugin_name) — an Operator Card is present for the
+                                   detected plugin; file-based snippet is
+                                   authoritative (Build 10 Guard A handles dedup).
+      ("missing",  plugin_name) — a known plugin was recognized (via
+                                   get_known_plugin_name_for_message) but no
+                                   Operator Card exists for it.
+      ("none",     "")          — no known plugin recognized in the message.
+
+    Build 11: drives ## KNOWLEDGE STATUS block injection.
+    Fails closed: "missing" only fires when the inventory recognizes the plugin.
+    """
+    if card_file:
+        plugin_name = card_file.replace(" Operator Card.md", "").replace(".md", "")
+        return ("verified", plugin_name)
+    recognized = _get_known_plugin_name(message)
+    if recognized:
+        return ("missing", recognized)
+    return ("none", "")
+
+
 _RISK_LEVEL = {
     "INTERN_WRITE_RISKY": "HIGH",
     "INTERN_WRITE_SAFE":  "MEDIUM",
@@ -622,6 +648,22 @@ def build_message_pack(message: str) -> dict:
         if snippet:
             parts.append(snippet)
             debug_card = card_file.replace(" Operator Card.md", "").replace(".md", "")
+
+    # ── Build 11 — Knowledge status block ─────────────────────────────────────
+    # Injected only when a known plugin was recognized but no Operator Card exists.
+    # "verified": card already injected above — no block needed.
+    # "none":     no plugin recognized — no block.
+    # "missing":  plugin in inventory (has_card=False) — inject gap signal.
+    # Conductor can still answer from general knowledge; the block tells the
+    # Explorer/Critic not to fabricate plugin-specific parameter/workflow claims.
+    _kstatus, _kplugin = _check_plugin_knowledge_status(message, card_file)
+    if _kstatus == "missing":
+        parts.append(
+            f"## KNOWLEDGE STATUS\n"
+            f"Plugin recognized: {_kplugin}\n"
+            f"Operator card: not available — answer from general knowledge only\n"
+            f"Flag any plugin-specific parameter or workflow claims as unverified."
+        )
 
     pack = "\n\n".join(parts)
 

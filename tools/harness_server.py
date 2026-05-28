@@ -471,6 +471,10 @@ def _build_explorer_instructions(session_available):
         "- assumptions: be explicit. The producer needs to know what you guessed.\n"
         "- actionable: true if the producer can take an immediate concrete step.\n"
         "- confidence: 0.0–1.0 based on how well available context supports this direction.\n"
+        "- knowledge_gap: if the context includes '## KNOWLEDGE STATUS' with "
+        "'Operator card: not available', populate assumptions with the knowledge "
+        "gap for every candidate that makes plugin-specific claims, and set "
+        "confidence ≤ 0.5 for those candidates.\n"
         "- The answer field synthesises the best direction naturally. "
         "Do not expose or number the candidate list.\n\n"
         + _EXPLORER_JSON_SCHEMA
@@ -675,6 +679,9 @@ def _build_critic_prompt(candidates, question_text, session_context, card_contex
         "  practicality          — producer can act on this immediately",
         "  unsupported_assumptions — assumes things not present in context",
         "  operator_card_compliance — respects Operator Card Never Do, Risky Writes, plugin identity, and supported controls",
+        "  knowledge_evidence    — penalize candidates making specific plugin-parameter "
+        "or plugin-workflow claims when '## KNOWLEDGE STATUS' says no Operator Card is "
+        "available; reward candidates that acknowledge the knowledge gap explicitly.",
         "",
         "Select the highest-scoring candidate as 'selected' (index into the list above).",
         "Set 'kept' to indices that score well; 'rejected' to generic/contradicted/impractical ones.",
