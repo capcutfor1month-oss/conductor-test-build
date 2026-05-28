@@ -1,3 +1,13 @@
+---
+card_id: "ableton_stock_devices"
+display_name: "Ableton Stock Devices"
+type: "stock"
+risk_level: "low"
+verification_status: "verified"
+collection: "plugin_operator_index"
+tags: ["eq", "compressor", "limiter", "stock"]
+operator_card_triggers: ["eq eight", "compressor", "glue compressor", "limiter"]
+---
 # Operator Card — Ableton Stock Devices
 > EQ Eight, Compressor, Glue Compressor, Limiter, Auto Filter
 > Stock devices are FULLY controllable via Ableton LOM — no PluginBridge needed.

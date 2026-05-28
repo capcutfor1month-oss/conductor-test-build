@@ -1,3 +1,13 @@
+---
+card_id: "izotope_ozone_12"
+display_name: "Ozone 12"
+type: "mastering"
+risk_level: "high"
+verification_status: "verified"
+collection: "plugin_operator_index"
+tags: ["mastering", "limiter", "eq", "ozone"]
+operator_card_triggers: ["ozone", "mastering", "maximizer", "ozone 12"]
+---
 # Operator Card — iZotope Ozone 12
 > Loaded when Ozone 12 is active in the session — typically on Master Bus.
 > Risk: HIGH. This plugin sits at the end of the chain. Mistakes here affect the whole mix.

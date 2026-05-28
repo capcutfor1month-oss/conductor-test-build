@@ -1,3 +1,13 @@
+---
+card_id: "fabfilter_pro_q_4"
+display_name: "Pro-Q 4"
+type: "eq"
+risk_level: "low"
+verification_status: "verified"
+collection: "plugin_operator_index"
+tags: ["eq", "equalizer", "fabfilter", "pro-q", "pro-q4"]
+operator_card_triggers: ["eq", "pro-q", "pro-q 4", "equalizer", "fabfilter"]
+---
 # Operator Card — FabFilter Pro-Q 4
 > Loaded when Pro-Q 4 is active in the session.
 > Source: PluginBridge (737 params accessible via set_params)

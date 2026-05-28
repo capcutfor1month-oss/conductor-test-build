@@ -1,3 +1,13 @@
+---
+card_id: "xfer_serum_2"
+display_name: "Serum 2"
+type: "synth"
+risk_level: "medium"
+verification_status: "verified"
+collection: "plugin_operator_index"
+tags: ["synth", "synthesizer", "wavetable", "serum"]
+operator_card_triggers: ["serum", "synth", "synthesizer", "serum 2"]
+---
 # Operator Card — Xfer Records Serum 2
 > Loaded when Serum 2 is active in the session.
 > Typically on synth, lead, bass, or pad tracks.
