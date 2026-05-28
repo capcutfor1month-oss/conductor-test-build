@@ -43,6 +43,7 @@ sys.path.insert(0, _ROOT)
 from rag.request_mode_classifier import classify
 from rag.routed_retriever import retrieve as _routed_retrieve
 from rag.risk_taxonomy import get_card_file_for_message as _get_card_file
+from rag.memory_schema import NO_STRONG_MEMORY_MSG as _NO_MEMORY_MSG
 
 # ── PATHS ─────────────────────────────────────────────────────────────────────
 
@@ -438,6 +439,36 @@ def _load_card_snippet(card_file: str) -> str:
     return "\n".join(out) if len(out) > 1 else ""
 
 
+def _get_stable_card_id(card_file: str) -> "str | None":
+    """
+    Derive the stable ChromaDB ID for a detected operator card.
+
+    Reads the card file's YAML frontmatter and returns
+    "vault_plugin_" + frontmatter.card_id  — the same ID format used by
+    seed_operator_cards() in conductor_bridge.py (Build 9).
+
+    Fails closed: returns None if the file is missing, frontmatter is absent,
+    or card_id is not set — never guesses a derived ID that could mismatch.
+
+    Build 10: used by Guard A (dedup) to match the ChromaDB evidence item
+    that duplicates the file-based snippet already injected by _load_card_snippet().
+    """
+    if not card_file:
+        return None
+    path = os.path.join(PLUGINS_DIR, card_file)
+    content = _read_file(path)
+    if not content or not content.startswith("---"):
+        return None
+    end = content.find("---", 3)
+    if end == -1:
+        return None
+    fm_text = content[3:end]
+    m = re.search(r'card_id:\s*"([^"]+)"', fm_text)
+    if not m:
+        return None
+    return "vault_plugin_" + m.group(1)
+
+
 _RISK_LEVEL = {
     "INTERN_WRITE_RISKY": "HIGH",
     "INTERN_WRITE_SAFE":  "MEDIUM",
@@ -508,11 +539,65 @@ def build_message_pack(message: str) -> dict:
     mode_lines.append("\nRelevant retrieved context:")
     parts.append("\n".join(mode_lines))
 
+    # ── Plugin detection — must run BEFORE retrieval so guards can use result ──
+    card_file          = _detect_plugin(message)
+    detected_stable_id = _get_stable_card_id(card_file) if card_file else None
+
     # ── Memory search — routed retrieval (C1) ────────────────────────────────
     # Routes to correct collection(s) by mode, enforces similarity thresholds.
     # Returns both .retrieved (debug) and .injected (what goes into prompt).
-    project_id     = _get_project_id()
-    retrieval      = _routed_retrieve(message, mode, project_id=project_id)
+    project_id = _get_project_id()
+    retrieval  = _routed_retrieve(message, mode, project_id=project_id)
+
+    # ── Build 10 — plugin_operator_index pack guards ──────────────────────────
+    #
+    # Guard A — Deduplication:
+    #   When _detect_plugin() identified plugin X, _load_card_snippet() will
+    #   append a ## OPERATOR CARD block (filtered: Identity + Risky Writes +
+    #   Never Do only).  If routed_retriever also returned that same card from
+    #   plugin_operator_index, the full card body (including sections that
+    #   _load_card_snippet intentionally omits) would appear AGAIN in the Memory
+    #   section.  Guard A removes the duplicate ChromaDB hit for the detected
+    #   card — the file-based snippet is authoritative.
+    #
+    # Guard B — No-name BM25 block:
+    #   When no plugin was name-detected, BM25 rescue can still inject plugin
+    #   cards due to vocabulary overlap (e.g. "mix" in Pro-Q 4 card body for
+    #   "how do I mix a sitar").  Guard B blocks BM25-rescued plugin cards
+    #   when no plugin was explicitly detected.  Semantic hits
+    #   (rescue_mode=None, cosine ≥ threshold) are still allowed — they
+    #   represent genuine conceptual relevance.
+    _guards_changed = False
+    for _item in retrieval.retrieved:
+        if _item.collection != "plugin_operator_index" or not _item.injected:
+            continue
+        # Guard A: same card as the file-based snippet — remove duplicate
+        if detected_stable_id and _item.id == detected_stable_id:
+            _item.injected = False
+            _item.reason   = "dedup_file_path_is_authoritative"
+            _guards_changed = True
+        # Guard B: no plugin named + BM25-rescued card — remove noise
+        elif not card_file and _item.rescue_mode == "bm25":
+            _item.injected = False
+            _item.reason   = "no_plugin_detected_bm25_rescue_blocked"
+            _guards_changed = True
+
+    if _guards_changed:
+        # Rebuild injected list + summary_text to reflect guard changes.
+        # Mirrors the format used by routed_retriever.retrieve().
+        _new_injected = [i for i in retrieval.retrieved if i.injected]
+        if _new_injected:
+            _sumlines = []
+            for _i in _new_injected:
+                _snip = (_i.text or "")[:200].replace("\n", " ")
+                if len(_i.text or "") > 200:
+                    _snip += "…"
+                _sumlines.append(f"{_i.label} {_snip}")
+            retrieval.summary_text = "\n".join(_sumlines)
+        else:
+            retrieval.summary_text = _NO_MEMORY_MSG
+        retrieval.injected = _new_injected
+
     debug_memories = [i.text for i in retrieval.retrieved]   # everything retrieved
     debug_injected = [i.text for i in retrieval.injected]    # only what cleared threshold
 
@@ -532,7 +617,6 @@ def build_message_pack(message: str) -> dict:
     parts.append("\n".join(mem_lines))
 
     # ── Operator card — only if this message mentions a known plugin ──────────
-    card_file = _detect_plugin(message)
     if card_file:
         snippet = _load_card_snippet(card_file)
         if snippet:
