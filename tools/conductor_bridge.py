@@ -4646,6 +4646,71 @@ def seed_failure_cases():
     return upserted
 
 
+def seed_operator_cards():
+    """
+    Vault seeder — idempotent.
+    Reads conductor-vault/plugins/*.md and upserts into plugin_operator_index.
+    """
+    if not CHROMA_AVAILABLE:
+        return 0
+
+    col = get_collection("plugin")
+    if col is None:
+        return 0
+
+    vault_dir = os.path.join(
+        os.path.dirname(__file__), "..", "conductor-vault", "plugins"
+    )
+    if not os.path.exists(vault_dir):
+        return 0
+
+    upserted = 0
+    import re as _re
+
+    # Build 9: stale-ID cleanup removed.
+    # seed_operator_cards() only upserts by stable IDs (vault_plugin_<card_id>).
+    # Upsert is idempotent — same ID overwrites, new ID inserts.
+    # We never delete unrelated IDs from plugin_operator_index.
+    for filename in os.listdir(vault_dir):
+        if not filename.endswith(".md"):
+            continue
+
+        path = os.path.join(vault_dir, filename)
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        card_id = ""
+        verification_status = "unknown"
+        if content.startswith("---"):
+            end_idx = content.find("---", 3)
+            if end_idx != -1:
+                fm_text = content[3:end_idx]
+                content = content[end_idx+3:].strip()
+                m_cid = _re.search(r'card_id:\s*"([^"]+)"', fm_text)
+                if m_cid: card_id = m_cid.group(1)
+                m_vs = _re.search(r'verification_status:\s*"([^"]+)"', fm_text)
+                if m_vs: verification_status = m_vs.group(1)
+
+        if not card_id:
+            card_id = filename.replace(" Operator Card.md", "").replace(".md", "").replace(" ", "_").lower()
+
+        stable_id = f"vault_plugin_{card_id}"
+        meta = make_metadata("plugin_operator_index", {
+            "memory_level": 3,
+            "source_type": "operator_card",
+            "verification_status": verification_status,
+            "plugin": card_id,
+        })
+
+        try:
+            col.upsert(documents=[content], ids=[stable_id], metadatas=[meta])
+            upserted += 1
+        except Exception:
+            pass
+
+    return upserted
+
+
 def main():
     print(f"""
 ╔══════════════════════════════════════════════╗
@@ -4712,6 +4777,12 @@ def main():
             print(f"  Vault seeder           : ✅ Upserted {upserted} failure cases → failure_cases_index (stable IDs)")
         else:
             print(f"  Vault seeder           : ✅ failure_cases_index up to date (vault file not found or ChromaDB unavailable)")
+            
+        upserted_cards = seed_operator_cards()
+        if upserted_cards > 0:
+            print(f"  Vault seeder           : ✅ Upserted {upserted_cards} operator cards → plugin_operator_index (stable IDs)")
+        else:
+            print(f"  Vault seeder           : ✅ plugin_operator_index up to date (vault files not found or ChromaDB unavailable)")
     print()
 
     server = HTTPServer(("localhost", BRIDGE_PORT), ConductorHandler)
