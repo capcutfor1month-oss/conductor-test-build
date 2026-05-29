@@ -925,11 +925,17 @@ def run_d151():
         ("_compose_final_answer",    "_compose_final_answer defined"),
         ("final_text",               "final_text variable used in handler"),
         ('"critic"',                 '"critic" key in response'),
-        ('"text":     final_text',   'text field uses final_text (not raw answer_text)'),
     ]
     for symbol, label in required_symbols:
         if symbol not in src:
             errors.append(f"[A] {label}: {symbol!r} not in harness_server source")
+
+    # Spacing-insensitive check: explorer answer response must use final_text, not answer_text.
+    # Build 15 added response_id which shifted alignment, so we match flexibly.
+    import re as _re
+    if not _re.search(r'"text"\s*:\s*final_text', src):
+        errors.append('[A] text field uses final_text (not raw answer_text): '
+                      r'"text"\s*:\s*final_text not found in harness_server source')
 
     # ── Part B: Slice 14 symbols still intact ─────────────────────────────────
     slice14_symbols = [

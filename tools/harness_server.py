@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Live Harness v1.5 Server — AI intent parser + Knowledge Gateway for Ableton Live."""
 
+import datetime
 import http.server
 import json
 import os
 import sys
 import re
+import threading
+import uuid
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -14,6 +17,20 @@ PORT = 4620
 
 # ── Conductor Bridge URL ───────────────────────────────────────────────────────
 BRIDGE_URL = "http://localhost:4611"
+
+# ── Knowledge Feedback Log (Build 15) ─────────────────────────────────────────
+# Separate from memory/feedback_log.jsonl (write-action feedback, D Slice 3).
+# This log captures explicit user quality signals on knowledge answers only.
+# Never written to by bridge, rag, or action paths.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_HERE)
+_MEMORY_DIR = os.path.join(_PROJECT_ROOT, "memory")
+_KFBL_LOG_PATH = os.path.join(_MEMORY_DIR, "knowledge_feedback_log.jsonl")
+_kfbl_write_lock = threading.Lock()
+
+_KNOWLEDGE_FEEDBACK_TYPES = frozenset({
+    "HELPFUL", "NOT_HELPFUL", "TOO_VAGUE", "WRONG", "OUTDATED",
+})
 
 # ── Knowledge Explorer modes ────────────────────────────────────────────────────
 # These modes trigger structured candidate-direction generation.
@@ -102,6 +119,18 @@ If you cannot map the intent:
 
 
 # ── Bridge helpers ─────────────────────────────────────────────────────────────
+
+def _append_knowledge_feedback(record: dict) -> None:
+    """Append one JSONL record to knowledge_feedback_log.jsonl. Thread-safe. Never raises."""
+    try:
+        os.makedirs(_MEMORY_DIR, exist_ok=True)
+        line = json.dumps(record, ensure_ascii=False, default=str) + "\n"
+        with _kfbl_write_lock:
+            with open(_KFBL_LOG_PATH, "a", encoding="utf-8") as f:
+                f.write(line)
+    except Exception:
+        pass
+
 
 def _call_bridge_get(path, timeout=5.0):
     """
@@ -1144,9 +1173,21 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        _VALID_PATHS = {"/harness/parse_intent", "/harness/orchestrate"}
+        _VALID_PATHS = {"/harness/parse_intent", "/harness/orchestrate", "/harness/feedback"}
         if self.path not in _VALID_PATHS:
             self.send_json(404, {"ok": False, "error": "Not found"})
+            return
+
+        # ── /harness/feedback has its own body parser — no API key required ──────
+        if self.path == "/harness/feedback":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length)
+                body = json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                self.send_json(400, {"ok": False, "error": "Invalid JSON body"})
+                return
+            self._handle_knowledge_feedback(body)
             return
 
         if not self.api_key:
@@ -1258,6 +1299,10 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
     #   All other modes → context-enriched knowledge answer + type:"answer"
 
     def _handle_orchestrate(self, text):
+        # Build 15: unique ID for this response — lets the client submit feedback
+        # via POST /harness/feedback without referencing a proof or action log.
+        response_id = uuid.uuid4().hex[:12]
+
         # ── Step 1: context pack (classify + ChromaDB + operator card) ───────────
         pack_data, _pack_err = _call_bridge_get(
             "/context/pack?q=" + urllib.parse.quote(text, safe=""),
@@ -1310,6 +1355,7 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(200, {
                 "ok":                 parsed.get("ok", False),
                 "type":               "action",
+                "response_id":        response_id,
                 "action_id":          parsed.get("action_id", "unmapped"),
                 "params":             parsed.get("params", {}),
                 "confidence":         parsed.get("confidence", 0.0),
@@ -1332,13 +1378,14 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
             clarify_text = _compose_clarify_question(text, risk_reason, risk_category)
             if clarify_text:
                 self.send_json(200, {
-                    "ok":       True,
-                    "type":     "clarify",
-                    "text":     clarify_text,
-                    "mode":     mode,
-                    "model":    self.model,
-                    "provider": self.provider,
-                    "tokens":   {"input": 0, "output": 0, "total": 0},
+                    "ok":          True,
+                    "type":        "clarify",
+                    "response_id": response_id,
+                    "text":        clarify_text,
+                    "mode":        mode,
+                    "model":       self.model,
+                    "provider":    self.provider,
+                    "tokens":      {"input": 0, "output": 0, "total": 0},
                 })
                 return
             # Composer returned '' — fall through to call_knowledge_answer() below.
@@ -1401,15 +1448,16 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
                 # explorer_answer if Critic is empty or returned an invalid index.
                 final_text = _compose_final_answer(answer_text, explorer_data, critic_data)
                 self.send_json(200, {
-                    "ok":       True,
-                    "type":     "answer",
-                    "text":     final_text,
-                    "explorer": explorer_data,
-                    "critic":   critic_data,
-                    "mode":     mode,
-                    "model":    self.model,
-                    "provider": self.provider,
-                    "tokens":   tokens,
+                    "ok":          True,
+                    "type":        "answer",
+                    "response_id": response_id,
+                    "text":        final_text,
+                    "explorer":    explorer_data,
+                    "critic":      critic_data,
+                    "mode":        mode,
+                    "model":       self.model,
+                    "provider":    self.provider,
+                    "tokens":      tokens,
                 })
             else:
                 # Direct answer path — READ, CLARIFY, or unknown modes.
@@ -1419,13 +1467,14 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
                     self.provider, self.model, self.api_key, self.base_url,
                 )
                 self.send_json(200, {
-                    "ok":       True,
-                    "type":     "answer",
-                    "text":     answer_text,
-                    "mode":     mode,
-                    "model":    self.model,
-                    "provider": self.provider,
-                    "tokens":   tokens,
+                    "ok":          True,
+                    "type":        "answer",
+                    "response_id": response_id,
+                    "text":        answer_text,
+                    "mode":        mode,
+                    "model":       self.model,
+                    "provider":    self.provider,
+                    "tokens":      tokens,
                 })
         except urllib.error.HTTPError as e:
             safe_message = getattr(e, "safe_message", "Provider rejected the request.")
@@ -1437,6 +1486,65 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_json(502, {"ok": False, "error": str(e)})
             return
+
+    # ── POST /harness/feedback ──────────────────────────────────────────────────
+    # Build 15 — Knowledge Feedback Log v1.
+    # Captures explicit quality signals on knowledge answers only.
+    # Completely separate from POST /feedback at bridge (write-action feedback).
+    #
+    # Body: {
+    #   "response_id":   required — from a prior orchestrate 200 response
+    #   "feedback_type": required — HELPFUL|NOT_HELPFUL|TOO_VAGUE|WRONG|OUTDATED
+    #   "message":       optional — human note
+    # }
+    #
+    # Rules:
+    #   - Does NOT write to feedback_log.jsonl, action_log.jsonl, action_proof_log.jsonl
+    #   - Does NOT write to ChromaDB
+    #   - promotion_eligible is always False in Build 15
+    #   - Thread-safe; write failures are silently swallowed
+    def _handle_knowledge_feedback(self, body):
+        response_id   = str(body.get("response_id") or "").strip()
+        feedback_type = str(body.get("feedback_type") or "").upper().strip()
+        message       = str(body.get("message") or "").strip()
+
+        if not response_id:
+            self.send_json(400, {
+                "ok":    False,
+                "error": "response_id is required — supply the response_id from a prior orchestrate response.",
+            })
+            return
+
+        if feedback_type not in _KNOWLEDGE_FEEDBACK_TYPES:
+            self.send_json(400, {
+                "ok":    False,
+                "error": (
+                    f"Invalid feedback_type {body.get('feedback_type')!r}. "
+                    f"Allowed: {sorted(_KNOWLEDGE_FEEDBACK_TYPES)}"
+                ),
+            })
+            return
+
+        feedback_id = uuid.uuid4().hex[:16]
+        timestamp   = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        record = {
+            "feedback_id":        feedback_id,
+            "response_id":        response_id,
+            "feedback_type":      feedback_type,
+            "timestamp":          timestamp,
+            "promotion_eligible": False,
+            "message":            message,
+        }
+        _append_knowledge_feedback(record)
+
+        self.send_json(200, {
+            "ok":           True,
+            "feedback_id":  feedback_id,
+            "response_id":  response_id,
+            "feedback_type": feedback_type,
+            "timestamp":    timestamp,
+        })
 
     def send_json(self, code, obj):
         payload = json.dumps(obj).encode()
