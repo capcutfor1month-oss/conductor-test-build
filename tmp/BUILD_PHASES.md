@@ -18,7 +18,7 @@ Mark ✅ when built + tested + logged into project.md / LIMITATIONS.md.
 Phase A — ✅ COMPLETE
 Phase B — ✅ COMPLETE
 Phase C — ✅ COMPLETE
-Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–19 complete)
+Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–21 complete)
 Phase E — NOT STARTED
 
 ### Locked Slices (current build)
@@ -38,6 +38,8 @@ Phase E — NOT STARTED
 - D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10): PASS/LOCKED
 - D Slice 18 — Plugin Knowledge Trust Signals (Build 11): PASS/LOCKED
 - D Slice 19 — Knowledge Status Context to Critic (Build 12): PASS/LOCKED
+- D Slice 20 — Critic Composer Polish (Build 13): PASS/LOCKED
+- D Slice 21 — CLARIFY Mode Hardening (Build 14): PASS/LOCKED
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -766,6 +768,64 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | `tests/phase_d_slice16_eval.py` | 8/8 PASS |
 | `tests/phase_d_slice15_eval.py` | 11/11 PASS |
 | `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+### Phase D — Slice 20 (Critic Composer Polish — Build 13) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice20_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S20 | `_compose_final_answer()` — em-dash prose join for short directions (≤ 8 words); period join for longer. Strip trailing punctuation before joining so connectors land cleanly. | `tools/harness_server.py` | ✅ |
+| D-S20 | `_safe_session_facts(facts)` — new helper; filters `session_facts_used` entries for user-facing safety. Drops: JSON-looking facts (`{`, `[`), internal key:value metadata (`mode:`, `risk:`, `score:`, `selected:`, `kept:`, `rejected:`), ID references (`proof id`, `request id`, `action id` — space form; underscore forms caught by snake_case check), `_STRUCTURAL_RE` matches, `_TRUST_LABEL_RE` matches, Operator Card refs, markdown headers, snake_case keys, entries > 60 chars. | `tools/harness_server.py` | ✅ |
+| D-S20 | `_compose_final_answer()` — light session_facts_used weaving: novel safe facts (at most 2, not already in composed text) appended as parenthetical `(fact1, fact2).` | `tools/harness_server.py` | ✅ |
+| D-S20 | `tests/phase_d_slice16_eval.py` — D154/D157 assertions updated for em-dash format ("Use gentle Ozone mastering moves" is 6 words). | `tests/phase_d_slice16_eval.py` | ✅ |
+| D-S20 | Phase D Slice 20 eval suite | `tests/phase_d_slice20_eval.py` — D187–D196, 10/10 PASS | ✅ |
+
+**Codex audit result:** PASS — Build 13 locked. Commit: `8bb4b0b`
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice20_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice19_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+| `node --check app/harness.js` | PASS |
+
+---
+
+### Phase D — Slice 21 (CLARIFY Mode Hardening — Build 14) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice21_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S21 | `_CLARIFY_LABEL_RE` — module-level regex (re.IGNORECASE) guarding internal category/label names from leaking into composed clarify questions: `clarify`, `clarify_required`, `unclear_target`, `unclear_scope`, `too_short`, `unsupported_manual_gui`, `risk_category`, `protection_level`, `block_unsupported`, `mode:`, `risk:`, `protection:`. | `tools/harness_server.py` | ✅ |
+| D-S21 | `_CLARIFY_VERB_RE` — module-level regex extracting action verbs from ambiguous pronoun messages (lower, raise, boost, cut, compress, route, pan, mute, solo, arm, filter, eq, bypass, enable, disable, rename, color, duplicate, create, load, send, add, remove, set, adjust, apply, change). | `tools/harness_server.py` | ✅ |
+| D-S21 | `_clarify_safe(question)` — safety guard; returns `""` if output is not a question (no `?`) or contains `_CLARIFY_LABEL_RE` / `_STRUCTURAL_RE` / `_TRUST_LABEL_RE` matches. | `tools/harness_server.py` | ✅ |
+| D-S21 | `_compose_clarify_question(original_text, risk_reason, risk_category)` — deterministic composer, no LLM call. Template map: `unclear*` → `"Which track or plugin should I {verb}?"` (verb from `_CLARIFY_VERB_RE`); `too_short` → `"What would you like to do — could you say a bit more?"`; `*scope*` → `"Which track, bus, or plugin are you working on?"`; generic fallback from `risk_reason` if safe; BLOCK/unknown → `""`. | `tools/harness_server.py` | ✅ |
+| D-S21 | `_handle_orchestrate()` — extracts `risk_reason` and `risk_category` from `pack_data`. CLARIFY fast-path inserted before context assembly: if `_compose_clarify_question()` returns a non-empty string, responds immediately with `type:"clarify"`, zero LLM tokens. Falls through to `call_knowledge_answer()` when composer returns `""`. | `tools/harness_server.py` | ✅ |
+| D-S21 | Phase D Slice 21 eval suite | `tests/phase_d_slice21_eval.py` — D197–D204, 8/8 PASS | ✅ |
+
+**Codex audit result:** PASS — Build 14 locked. Commit: `7376a41`
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice21_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice20_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice19_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+| `node --check app/harness.js` | PASS |
 
 ---
 

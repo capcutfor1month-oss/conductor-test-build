@@ -27,6 +27,8 @@
 | D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10) | D162–D168 | `phase_d_slice17_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 18 — Plugin Knowledge Trust Signals (Build 11) | D169–D176 | `phase_d_slice18_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 19 — Knowledge Status Context to Critic (Build 12) | D177–D186 | `phase_d_slice19_eval.py` | ✅ LOCKED — 10/10 PASS |
+| D Slice 20 — Critic Composer Polish (Build 13) | D187–D196 | `phase_d_slice20_eval.py` | ✅ LOCKED — 10/10 PASS |
+| D Slice 21 — CLARIFY Mode Hardening (Build 14) | D197–D204 | `phase_d_slice21_eval.py` | ✅ LOCKED — 8/8 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -36,6 +38,8 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+phase_d_slice21_eval.py — 8/8   PASS  (D197–D204, CLARIFY Mode Hardening — Build 14)
+phase_d_slice20_eval.py — 10/10 PASS  (D187–D196, Critic Composer Polish — Build 13)
 phase_d_slice19_eval.py — 10/10 PASS  (D177–D186, Knowledge Status Context to Critic — Build 12)
 phase_d_slice18_eval.py — 8/8   PASS  (D169–D176, Plugin Knowledge Trust Signals — Build 11)
 phase_d_slice17_eval.py — 8/8   PASS  (D162–D168, Plugin Knowledge Routing v1)
@@ -54,72 +58,61 @@ python3 -m py_compile tools/harness_server.py  PASS
 
 ---
 
-## CURRENT HANDOFF — BUILD 7 COMPLETE
+## CURRENT HANDOFF — BUILD 14 COMPLETE
 
 ```
-Build:               Build 7 — Creative Critic v1
+Build:               Build 14 — CLARIFY Mode Hardening
 
-Last completed step: _compose_final_answer() added to harness_server.py.
-                     _handle_orchestrate Explorer branch now calls
-                     _compose_final_answer(answer_text, explorer_data, critic_data)
-                     and sends final_text instead of raw answer_text.
-                     phase_d_slice15_eval.py updated: D143–D148 revised,
-                     D149 Sub-case C added (invalid index), D152 (filtering proof)
-                     and D153 (real parser fallback) added. 11/11 passing.
+Last completed step: _compose_clarify_question() + _clarify_safe() added to
+                     harness_server.py. CLARIFY fast-path inserted in
+                     _handle_orchestrate() before context assembly.
+                     risk_reason and risk_category now extracted from pack_data.
+                     phase_d_slice21_eval.py created: D197–D204, 8/8 PASS.
 
 Files changed:
   tools/harness_server.py
-    - Added _compose_final_answer() — deterministic composer, no LLM call.
-      Reads critic_data["selected"], validates index, builds
-      "{direction}. {rationale}." from selected candidate.
-      Falls back to explorer_answer if critic_data empty, index invalid,
-      direction missing, or _STRUCTURAL_RE fires on composed text.
-    - Added call_creative_critic() — single LLM call, evaluates candidates
-      on 6 criteria (genericity / session_grounding / session_contradiction /
-      goal_fit / practicality / unsupported_assumptions).
-      Returns ({}, tokens) on parse failure or invalid index. Never raises to caller.
-    - Added _build_critic_prompt() and _CRITIC_JSON_SCHEMA.
-    - _handle_orchestrate Explorer branch: calls call_creative_critic after
-      call_knowledge_explorer, then calls _compose_final_answer, sends
-      "text": final_text (not answer_text).
+    - _CLARIFY_LABEL_RE (module-level, re.IGNORECASE) — guards internal
+      category/label names from leaking into composed clarify questions.
+    - _CLARIFY_VERB_RE (module-level) — extracts action verbs from ambiguous
+      pronoun messages for grounded question generation.
+    - _clarify_safe(question) — final safety guard; rejects non-questions
+      and outputs containing internal labels.
+    - _compose_clarify_question(original_text, risk_reason, risk_category) —
+      deterministic composer, no LLM call. Templates: unclear* → verb-grounded
+      question; too_short → natural re-ask; *scope* → track/bus/plugin question;
+      generic fallback from risk_reason; BLOCK/unknown → ''.
+    - _handle_orchestrate() — extracts risk_reason + risk_category from
+      pack_data. CLARIFY fast-path returns type:"clarify" with zero LLM tokens
+      when composer succeeds; falls through to call_knowledge_answer() (type:
+      "answer") when composer returns ''.
 
-  tests/phase_d_slice15_eval.py
-    - D143/D144: assert text ≠ explorer_answer; assert selected direction in text.
-    - D145–D147: added text content assertions per section.
-    - D148: removed old text==explorer_answer assert; added composed-text checks.
-    - D149: added Sub-case C — invalid selected index mock → fallback.
-    - D151: added _compose_final_answer + final_text to static symbol checks.
-    - D152 (new): core filtering proof — 5 assertions proving rejected candidate
-      cannot control the final answer.
-    - D153 (new): real call_creative_critic() parser — 7 sub-cases (malformed,
-      missing key, out-of-range, valid, _compose_final_answer edge cases).
+  tests/phase_d_slice21_eval.py (new file)
+    - D197: composer unit tests — all template branches (7 sub-cases)
+    - D198: label guard — no internal labels in any template output
+    - D199: integration — pronoun "Lower it" → type:"clarify", verb reflected
+    - D200: integration — too_short "ok" → type:"clarify", no LLM call
+    - D201: integration — BLOCK/unsupported → composer returns '', fallback fires
+    - D202: regression — MENTOR mode unaffected
+    - D203: risk_reason/risk_category extraction correctness
+    - D204: symbol importability + output shape contracts
 
-Tests run:           phase_d_slice15_eval.py 11/11 PASS
-                     phase_d_slice14_eval.py  8/8  PASS
-                     phase_d_slice13_eval.py  7/7  PASS
-                     phase_d_slice12_eval.py  7/7  PASS
-                     phase_d_slice11_eval.py 56/56 PASS
-                     phase_d_slice10_eval.py  6/6  PASS
-                     phase_d_slice9_eval.py   6/6  PASS
-                     test_vault_integrity.py 15/15 PASS
+Tests run:           phase_d_slice21_eval.py  8/8  PASS
+                     phase_d_slice20_eval.py 10/10 PASS
+                     phase_d_slice19_eval.py 10/10 PASS
+                     phase_d_slice18_eval.py  8/8  PASS
+                     phase_d_slice17_eval.py  8/8  PASS
+                     phase_d_slice16_eval.py  8/8  PASS
+                     phase_d_slice15_eval.py 11/11 PASS
                      node --check app/harness.js    PASS
-                     python3 -m py_compile harness_server.py  PASS
+                     python3 -m py_compile tools/harness_server.py  PASS
 
 Current failure:     none — all passing
 
-Next intended edit:  Mark Build 7 PASS/LOCKED in tmp/BUILD_PHASES.md and project.md
-                     (doc update only — no code changes needed)
-
-Known limitation:    _compose_final_answer() produces a safe but simple answer:
-                     "{direction}. {rationale}." — no LLM rewrite, no polish.
-                     Build 7 contract is satisfied. Marked for future polish:
-                     premium co-producer phrasing, smoother sentence flow,
-                     optional session-fact weaving. Do NOT reopen Build 7 for this.
-                     Track as: "Critic composer polish — post Build 7".
+Next intended edit:  paused — awaiting user direction for next slice
 
 Do-not-touch list:   conductor_bridge.py
                      rag/* (all files)
-                     phase_d_slice1–14_eval.py (all locked)
+                     phase_d_slice1–21_eval.py (all locked)
                      conductor-vault/producer/never_do_rules.md
                      rag/action_proof.py, rag/undo_engine.py, rag/readback.py
                      action endpoints (/action/*)

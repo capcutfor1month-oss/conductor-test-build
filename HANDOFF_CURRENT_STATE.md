@@ -11,7 +11,7 @@ Phase D Slices 1–5 are complete and audited (PASS/LOCKED).
 Expanded Actions Slice 1 is PASS/LOCKED (track_create, track_delete, track_duplicate, track_arm, track_monitor, track_rename, track_color, return_track_create, tracks_create_multiple).
 Expanded Actions Slice 2 is PASS/LOCKED (track_send, track_route, transport_play, transport_stop, transport_record, transport_loop, transport_metronome).
 Expanded Actions Slice 3A (`POST /action/plugin_bypass`) is PASS/LOCKED (9/9 tests).
-Live Harness Slices 9–19 are PASS/LOCKED (Builds 6–12, Knowledge Explorer through Knowledge Status Context to Critic).
+Live Harness Slices 9–21 are PASS/LOCKED (Builds 6–14, Knowledge Explorer through CLARIFY Mode Hardening).
 All test suites pass. Phase C is stable.
 Live Harness v1.5 is present (`app/harness.html`) — product-preview shell, not final shipped UI.
 Product-layer re-alignment is pending (docs → harness UX → session-state → metadata hiding).
@@ -37,6 +37,8 @@ Product-layer re-alignment is pending (docs → harness UX → session-state →
 | D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10) | ✅ Complete (PASS/LOCKED — 8/8) |
 | D Slice 18 — Plugin Knowledge Trust Signals (Build 11) | ✅ Complete (PASS/LOCKED — 8/8) |
 | D Slice 19 — Knowledge Status Context to Critic (Build 12) | ✅ Complete (PASS/LOCKED — 10/10) |
+| D Slice 20 — Critic Composer Polish (Build 13) | ✅ Complete (PASS/LOCKED — 10/10) |
+| D Slice 21 — CLARIFY Mode Hardening (Build 14) | ✅ Complete (PASS/LOCKED — 8/8) |
 
 ---
 
@@ -139,6 +141,13 @@ Per `CLAUDE.md` no-overbuild policy: do not build batch undo, undo chain, or und
 | `tests/phase_d_slice2_eval.py` (D12–D22) | ✅ Pass | Includes Slice 1 + Phase C regression |
 | `tests/phase_d_slice3_eval.py` (D23–D30) | ✅ Pass | |
 | `tests/phase_d_slice4_eval.py` (D31–D40) | ✅ Pass | Includes all prior regressions |
+| `tests/phase_d_slice21_eval.py` (D197–D204) | ✅ Pass | Build 14 — CLARIFY Mode Hardening |
+| `tests/phase_d_slice20_eval.py` (D187–D196) | ✅ Pass | Build 13 — Critic Composer Polish |
+| `tests/phase_d_slice19_eval.py` (D177–D186) | ✅ Pass | Build 12 — Knowledge Status Context to Critic |
+| `tests/phase_d_slice18_eval.py` (D169–D176) | ✅ Pass | Build 11 — Plugin Knowledge Trust Signals |
+| `tests/phase_d_slice17_eval.py` (D162–D168) | ✅ Pass | Builds 9+10 — Plugin Knowledge Routing |
+| `tests/phase_d_slice16_eval.py` (D154–D161) | ✅ Pass | Build 8 — Card-aware Creative Critic |
+| `tests/phase_d_slice15_eval.py` (D143–D153) | ✅ Pass | Build 7 — Creative Critic v1 |
 
 **Run with:** `bash tools/run_tests.sh` — uses chromadb venv Python automatically.
 **Must be sequential** — parallel runs collide on shared JSONL log files.
