@@ -346,16 +346,31 @@ async function handleSandboxChat(sourceInput = null) {
             return;
         }
 
-        // Knowledge / mentor / read / clarify answer — display directly, no proposal card.
+        // Build 16: explicit clarify guard — display question as assistant message, no chips.
+        // type:"clarify" is the Build 14 CLARIFY fast-path (deterministic, zero LLM tokens).
+        // Never attach feedback chips to a clarifying question.
+        if (data.type === "clarify") {
+            const clarifyText = data.text || "Could you clarify what you mean?";
+            addChatMessage(clarifyText, "assistant");
+            if (fromFloatChat) addFloatHarnessMessage(clarifyText, "assistant");
+            sandboxChatHistory.push({ role: "assistant", text: clarifyText, ts: new Date().toISOString() });
+            setStatus("Needs clarification.", "idle");
+            if (typeof window.setNotchState === "function") window.setNotchState("default");
+            return;
+        }
+
+        // Knowledge / mentor / read answer — display directly, no proposal card.
+        // Build 16: capture wrap so feedback chips can be attached below the bubble.
         if (data.type === "answer") {
             const answerText = data.text || "Couldn't get an answer — try rephrasing?";
-            addChatMessage(answerText, "assistant");
+            const wrap = addChatMessage(answerText, "assistant");
             if (fromFloatChat) addFloatHarnessMessage(answerText, "assistant");
             sandboxChatHistory.push({ role: "assistant", text: answerText, ts: new Date().toISOString() });
             if (data.tokens && data.tokens.total) sessionStats.totalTokens += data.tokens.total;
             updateSessionTotals();
             setStatus("Answer ready.", "idle");
             if (typeof window.setNotchState === "function") window.setNotchState("default");
+            if (wrap && data.response_id) addFeedbackChips(wrap, data.response_id);
             return;
         }
 
@@ -493,6 +508,76 @@ function addChatMessage(content, role) {
     }
     messages.appendChild(wrap);
     messages.scrollTop = messages.scrollHeight;
+    return wrap;
+}
+
+// ── Knowledge Feedback (Build 16) ────────────────────────────────
+// Fire-and-forget POST to /harness/feedback. No await. No error shown to user.
+function _sendKnowledgeFeedback(responseId, feedbackType) {
+    fetch("/harness/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response_id: responseId, feedback_type: feedbackType })
+    }).catch(() => {});
+}
+
+// Attach ambient feedback chips below a msg-wrap element.
+// Only called for type:"answer" responses where response_id exists.
+// Chip pattern: [Helpful] [Not this ▾]
+//                           └─ [Too vague] [Wrong] [Outdated]
+function addFeedbackChips(wrap, responseId) {
+    if (!wrap || !responseId) return;
+
+    const row = document.createElement("div");
+    row.className = "fb-chips";
+
+    // Helpful — sends HELPFUL immediately, collapses all chips
+    const helpful = document.createElement("button");
+    helpful.className = "fb-chip";
+    helpful.textContent = "Helpful";
+    helpful.addEventListener("click", () => {
+        if (wrap.dataset.sent) return;
+        _sendKnowledgeFeedback(responseId, "HELPFUL");
+        wrap.dataset.sent = "true";
+        row.remove();
+        sub.remove();
+    });
+
+    // Not this — opens sub-row only, does NOT send anything
+    const notThis = document.createElement("button");
+    notThis.className = "fb-chip";
+    notThis.textContent = "Not this ▾";
+    notThis.addEventListener("click", () => {
+        if (wrap.dataset.sent) return;
+        sub.style.display = sub.style.display === "flex" ? "none" : "flex";
+    });
+
+    row.appendChild(helpful);
+    row.appendChild(notThis);
+
+    // Sub-row: sub-type chips, hidden until "Not this" is clicked
+    const sub = document.createElement("div");
+    sub.className = "fb-sub";
+    [
+        { label: "Too vague", type: "TOO_VAGUE"  },
+        { label: "Wrong",     type: "WRONG"      },
+        { label: "Outdated",  type: "OUTDATED"   },
+    ].forEach(({ label, type }) => {
+        const btn = document.createElement("button");
+        btn.className = "fb-chip";
+        btn.textContent = label;
+        btn.addEventListener("click", () => {
+            if (wrap.dataset.sent) return;
+            _sendKnowledgeFeedback(responseId, type);
+            wrap.dataset.sent = "true";
+            row.remove();
+            sub.remove();
+        });
+        sub.appendChild(btn);
+    });
+
+    wrap.appendChild(row);
+    wrap.appendChild(sub);
 }
 
 // ── Session Totals ───────────────────────────────────────────────────────────

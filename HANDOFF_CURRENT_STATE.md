@@ -12,6 +12,8 @@ Expanded Actions Slice 1 is PASS/LOCKED (track_create, track_delete, track_dupli
 Expanded Actions Slice 2 is PASS/LOCKED (track_send, track_route, transport_play, transport_stop, transport_record, transport_loop, transport_metronome).
 Expanded Actions Slice 3A (`POST /action/plugin_bypass`) is PASS/LOCKED (9/9 tests).
 Live Harness Slices 9–21 are PASS/LOCKED (Builds 6–14, Knowledge Explorer through CLARIFY Mode Hardening).
+D Slice 22 (Build 15 — Knowledge Feedback Log v1) is PASS/LOCKED (8/8).
+D Slice 23 (Build 16 — Ambient Feedback UI) is PASS/LOCKED (39/39).
 All test suites pass. Phase C is stable.
 Live Harness v1.5 is present (`app/harness.html`) — product-preview shell, not final shipped UI.
 Product-layer re-alignment is pending (docs → harness UX → session-state → metadata hiding).
@@ -39,6 +41,8 @@ Product-layer re-alignment is pending (docs → harness UX → session-state →
 | D Slice 19 — Knowledge Status Context to Critic (Build 12) | ✅ Complete (PASS/LOCKED — 10/10) |
 | D Slice 20 — Critic Composer Polish (Build 13) | ✅ Complete (PASS/LOCKED — 10/10) |
 | D Slice 21 — CLARIFY Mode Hardening (Build 14) | ✅ Complete (PASS/LOCKED — 8/8) |
+| D Slice 22 — Knowledge Feedback Log v1 (Build 15) | ✅ Complete (PASS/LOCKED — 8/8) |
+| D Slice 23 — Ambient Feedback UI / Feedback Wiring v1 (Build 16) | ✅ Complete (PASS/LOCKED — 39/39) |
 
 ---
 
@@ -142,6 +146,8 @@ Per `CLAUDE.md` no-overbuild policy: do not build batch undo, undo chain, or und
 | `tests/phase_d_slice3_eval.py` (D23–D30) | ✅ Pass | |
 | `tests/phase_d_slice4_eval.py` (D31–D40) | ✅ Pass | Includes all prior regressions |
 | `tests/phase_d_slice21_eval.py` (D197–D204) | ✅ Pass | Build 14 — CLARIFY Mode Hardening |
+| `tests/phase_d_slice22_eval.py` (D205–D212) | ✅ Pass | Build 15 — Knowledge Feedback Log v1 |
+| `tests/phase_d_slice23_eval.py` (D213–D220) | ✅ Pass | Build 16 — Ambient Feedback UI |
 | `tests/phase_d_slice20_eval.py` (D187–D196) | ✅ Pass | Build 13 — Critic Composer Polish |
 | `tests/phase_d_slice19_eval.py` (D177–D186) | ✅ Pass | Build 12 — Knowledge Status Context to Critic |
 | `tests/phase_d_slice18_eval.py` (D169–D176) | ✅ Pass | Build 11 — Plugin Knowledge Trust Signals |
@@ -235,3 +241,77 @@ Codex audit rules: `CODEX_REVIEWER.md` → **Backup Coding Audit**
 | `track_delete` and `transport_record` | 🔒 Disabled in harness | Pending proper confirmation UI. |
 | `route_track` / routing actions | ⚠️ Careful | Routing can require confirmation — policy TBD. |
 | ChromaDB memory | ⚠️ May be missing locally | Do not describe as fully available unless installed and seeded. |
+
+---
+
+## BUILD 16 — AMBIENT FEEDBACK UI (PASS/LOCKED)
+
+> Added May 2026 after Codex Build 16 audit.
+
+**Files touched:** `app/harness.js`, `app/harness.html`, `tests/phase_d_slice23_eval.py`, `docs/HARNESS_GUIDE.md`.
+
+**What changed:**
+- Added explicit `type:"clarify"` guard in `handleSandboxChat()` before the answer branch. Clarifying questions now display correctly and never receive feedback chips.
+- `addChatMessage()` returns the created `wrap` element so callers can attach UI to it.
+- Added `_sendKnowledgeFeedback(responseId, feedbackType)` — fire-and-forget `POST /harness/feedback`.
+- Added `addFeedbackChips(wrap, responseId)` — attaches chip row below assistant bubble.
+- Answer branch now calls `addFeedbackChips(wrap, data.response_id)` when both values are present.
+- CSS added to `harness.html`: `.fb-chips`, `.fb-chip`, `.fb-chip:hover`, `.fb-chip[data-sent]`, `.fb-sub` — styled to match existing `.btn-copy` / `.msg-actions` muted design language.
+
+**Eligibility rule (enforced in harness.js):**
+- Chips appear only on `data.type === "answer"` with `data.response_id` present
+- No chips on `type:"clarify"`, `type:"action"`, `!data.ok`, `needs_confirmation` path
+- In clarify → answer flow: chips appear only on the final answer
+
+**Chip UX:**
+- `Helpful` → sends `HELPFUL`, collapses all chips
+- `Not this ▾` → opens sub-row only, sends nothing
+- `Too vague` → sends `TOO_VAGUE`, collapses all chips
+- `Wrong` → sends `WRONG`, collapses all chips
+- `Outdated` → sends `OUTDATED`, collapses all chips
+- `data-sent="true"` set on `msg-wrap` after any send — prevents duplicate sends
+- No toast, popup, survey, or "training data" wording
+
+**What this does NOT do:**
+- No memory promotion, ranking, or retrieval influence
+- No ChromaDB writes
+- No frequency score changes
+- No changes to `tools/harness_server.py` or any rag/memory files
+
+**Test suite:** `tests/phase_d_slice23_eval.py` — D213–D220, 39/39 PASS
+
+**Next likely slice:** Build 17 — Memory Promotion v1 (`rag/memory_promotion.py`).
+Only after Build 16 is audited and locked.
+
+---
+
+## PREMIUM NOTCH UI v1 — HARNESS UPDATE
+
+> Added May 29, 2026 after Codex Premium Notch UI cleanup. UI-only harness work; no backend behavior changed.
+
+**Files touched:** `app/harness.html`, `app/harness.js`.
+
+**What changed:**
+- Premium notch preview environment was cleaned up: lighter wallpaper, grey menu-bar area, black hardware notch, and black/glass software notch surface.
+- Studio vs Freeform surface logic is harness-controlled by Ableton Open / Ableton Closed. These are internal context states, not user-facing product tabs.
+- Collapsed Studio notch shows a mock compact stereo meter only when Audio = Playing. Silent state hides meter/text. Freeform collapsed state stays quiet with no "Ask Conductor" text.
+- Voice states are Listening, Thinking, Applying, Done, and Can't verify. Voice state content avoids the hardware notch dead zone and expands horizontally from the notch surface.
+- Studio panel tabs: Session, Tasks, Meters, Assistants. Freeform panel tabs: Ask, Learn, Notes, Assistants. Studio/Freeform are not shown as user-facing tabs.
+- Session tab was cleaned into a premium studio overview with Selected, Session, Level, Actions, and a small Ask Conductor input.
+- Tasks tab was cleaned into Now / Recent / Can't verify rows with Cancel, Undo, Auto Execute controls.
+- Meters tab now has compact mock Master Out values and a mock optional top Meter Strip preview. No real meter engine was added.
+- Studio Assistants tab now shows four static studio cards: Mix Assistant, Mastering Assistant, Arrangement Assistant, Plugin Expert.
+- Settings remain behind the gear panel. Debug/developer/test controls were moved into Advanced/Harness.
+- Attached Session chat now opens from the small Ask Conductor input, uses the existing attached chat wiring, preserves conversation during hide/show, and can collapse when clicking outside.
+- Developer-only Mock Chat Responses controls were added under Advanced/Harness: Off/On and Small/Medium/Long. When On, attached chat can preview response sizes without calling backend or saving history.
+- Floating chat remains detachable, resizable from the corner, hideable, and re-attachable. Visual polish was applied, but behavior was preserved.
+- Floating chat Auto Exec label toggles between Auto Exec and Auto On. Auto Exec and Analyze show short timed window glows only; the glow is not permanent.
+
+**Explicitly not changed:**
+- No backend behavior changed.
+- No real meter engine added.
+- No screen agents / Surface OS / new production features added.
+- Existing detached/freeflow chat code preserved.
+- Existing Studio/Freeform tab logic preserved.
+
+**Verification performed:** static/code-level checks only (`node --check app/harness.js` and inline script syntax checks on `app/harness.html`). No browser/Playwright/manual visual tests were run by Codex for these UI passes.

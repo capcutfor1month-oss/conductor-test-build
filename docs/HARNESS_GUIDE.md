@@ -4,6 +4,8 @@ The Live Harness provides a secure, isolated frontend for testing Conductor's ve
 
 > **Product Status:** Live Harness v1.5 is a **product-preview shell**, not the final shipped UI. It is useful for development and controlled testing but needs UX re-alignment before friend-test deployment. Safe actions should eventually feel effortless — backend safety stays under the hood, not surfaced as bank-approval UI. Debug/token/endpoint details are developer-only and must not appear in production surfaces.
 
+> **Build 16 (Ambient Feedback UI):** Knowledge answer responses now show optional feedback chips below the assistant bubble. Chips appear only on `type:"answer"` responses with a valid `response_id`. They do not appear on clarifying questions, action proposals, errors, or confirmation paths. Feedback is log-only: signals are written to `memory/knowledge_feedback_log.jsonl` via `POST /harness/feedback` and have no effect on memory, ranking, or retrieval.
+
 ## How to Run
 
 ```bash
@@ -191,6 +193,40 @@ The following actions are backend-locked but **disabled in the harness** pending
 | `transport_record` | Session-altering — requires confirmation dialog before execution |
 
 **Routing actions** (`track_route`, `track_send`) are enabled but should be treated carefully — routing changes can require confirmation depending on the target (e.g., master bus routing). Confirmation policy for routing is TBD.
+
+## Feedback Chips (Build 16)
+
+Tiny optional feedback chips appear below `type:"answer"` Conductor responses in AI Sandbox Mode.
+
+**Eligibility:** `data.type === "answer"` AND `data.response_id` is present. No chips on clarifying questions, action proposals, errors, `!data.ok` responses, or the old `needs_confirmation` path.
+
+**Chip layout:**
+```
+[Helpful]  [Not this ▾]
+              [Too vague]  [Wrong]  [Outdated]   ← hidden until "Not this" clicked
+```
+
+**Behaviour:**
+- `Helpful` → fires `HELPFUL` immediately; chips collapse
+- `Not this ▾` → expands sub-row only; nothing is sent
+- `Too vague` → fires `TOO_VAGUE`; chips collapse
+- `Wrong` → fires `WRONG`; chips collapse
+- `Outdated` → fires `OUTDATED`; chips collapse
+- After any send: `data-sent="true"` is set on the `msg-wrap` element; further clicks are no-ops
+- `POST /harness/feedback` is fire-and-forget; no toast, popup, or error shown to user
+
+**What this does NOT do:**
+- No memory promotion, ranking, or retrieval changes
+- No ChromaDB writes
+- No frequency score changes
+- No implicit undo or override logging
+- No "training data" framing, survey, or dashboard
+
+**Clarify → answer flow:** If Conductor asks a clarifying question (`type:"clarify"`), that bubble shows no chips. When the user answers and Conductor responds with `type:"answer"`, chips appear on that final answer only.
+
+**CSS classes added:** `.fb-chips`, `.fb-chip`, `.fb-chip:hover`, `.fb-chip[data-sent]`, `.fb-sub` — styled to match existing `.btn-copy` / `.msg-actions` design language.
+
+---
 
 ## Re-Alignment Notes
 

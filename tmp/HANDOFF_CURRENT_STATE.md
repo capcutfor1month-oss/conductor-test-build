@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Build 7 (Creative Critic v1) complete. Pausing here.
+> Last updated: May 2026 — Build 16 (Ambient Feedback UI) complete. Pausing here.
 
 ---
 
@@ -29,6 +29,8 @@
 | D Slice 19 — Knowledge Status Context to Critic (Build 12) | D177–D186 | `phase_d_slice19_eval.py` | ✅ LOCKED — 10/10 PASS |
 | D Slice 20 — Critic Composer Polish (Build 13) | D187–D196 | `phase_d_slice20_eval.py` | ✅ LOCKED — 10/10 PASS |
 | D Slice 21 — CLARIFY Mode Hardening (Build 14) | D197–D204 | `phase_d_slice21_eval.py` | ✅ LOCKED — 8/8 PASS |
+| D Slice 22 — Knowledge Feedback Log v1 (Build 15) | D205–D212 | `phase_d_slice22_eval.py` | ✅ LOCKED — 8/8 PASS |
+| D Slice 23 — Ambient Feedback UI / Feedback Wiring v1 (Build 16) | D213–D220 | `phase_d_slice23_eval.py` | ✅ LOCKED — 39/39 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -38,6 +40,8 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+phase_d_slice23_eval.py — 39/39 PASS  (D213–D220, Ambient Feedback UI — Build 16)
+phase_d_slice22_eval.py — 8/8   PASS  (D205–D212, Knowledge Feedback Log v1 — Build 15)
 phase_d_slice21_eval.py — 8/8   PASS  (D197–D204, CLARIFY Mode Hardening — Build 14)
 phase_d_slice20_eval.py — 10/10 PASS  (D187–D196, Critic Composer Polish — Build 13)
 phase_d_slice19_eval.py — 10/10 PASS  (D177–D186, Knowledge Status Context to Critic — Build 12)
@@ -58,7 +62,68 @@ python3 -m py_compile tools/harness_server.py  PASS
 
 ---
 
-## CURRENT HANDOFF — BUILD 14 COMPLETE
+## CURRENT HANDOFF — BUILD 16 COMPLETE
+
+```
+Build:               Build 16 — Ambient Feedback UI / Feedback Wiring v1
+
+Last completed step: Added type:"clarify" guard in handleSandboxChat().
+                     addChatMessage() now returns wrap.
+                     Added _sendKnowledgeFeedback() and addFeedbackChips() to harness.js.
+                     Answer branch calls addFeedbackChips(wrap, data.response_id) when eligible.
+                     CSS for .fb-chips / .fb-chip / .fb-sub added to harness.html.
+                     phase_d_slice23_eval.py created: D213–D220, 39/39 PASS.
+
+Files changed:
+  app/harness.js
+    - type:"clarify" guard added before answer branch (explicit, no chips)
+    - addChatMessage() returns wrap element
+    - _sendKnowledgeFeedback(responseId, feedbackType) — fire-and-forget POST
+    - addFeedbackChips(wrap, responseId) — Helpful + Not this + sub-row chips
+    - Answer branch wires chips via if (wrap && data.response_id)
+
+  app/harness.html
+    - CSS: .fb-chips, .fb-chip, .fb-chip:hover, .fb-chip[data-sent], .fb-sub
+    - Matches .btn-copy / .msg-actions muted design language
+
+  tests/phase_d_slice23_eval.py (new file)
+    - D213: addChatMessage returns wrap
+    - D214: answer branch attaches chips when response_id exists
+    - D215: Helpful sends HELPFUL via POST /harness/feedback
+    - D216: Not this opens sub-row only, does not send NOT_HELPFUL
+    - D217: TOO_VAGUE / WRONG / OUTDATED send correct types
+    - D218: clarify type → assistant message, no chips
+    - D219: action/proposal path gets no chips
+    - D220: backend/rag files untouched; no forbidden wording
+
+  docs/HARNESS_GUIDE.md — Build 16 section added
+  HANDOFF_CURRENT_STATE.md — Build 16 state appended
+  tmp/HANDOFF_CURRENT_STATE.md — this file updated
+
+Tests run:           phase_d_slice23_eval.py  39/39 PASS
+                     phase_d_slice22_eval.py  8/8   PASS
+                     phase_d_slice21_eval.py  8/8   PASS
+                     node --check app/harness.js    PASS
+
+Current failure:     none — all passing
+
+Next intended edit:  paused — awaiting Codex audit then user direction for Build 17
+
+Do-not-touch list:   tools/harness_server.py (untouched)
+                     tools/conductor_bridge.py (untouched)
+                     rag/* (all files untouched)
+                     memory/* (untouched)
+                     phase_d_slice1–22_eval.py (all locked)
+                     action endpoints (/action/*)
+                     /session/state implementation
+                     Auto Execute path
+                     PluginBridge
+                     Operator Cards
+```
+
+---
+
+## PREVIOUS HANDOFF — BUILD 14 COMPLETE
 
 ```
 Build:               Build 14 — CLARIFY Mode Hardening
@@ -168,6 +233,34 @@ Do-not-touch list:   conductor_bridge.py
 - **`CoProducerResponse` translation layer is required before any friend-test UI deployment.**
 - Conductor must feel like a premium studio assistant — not a bank approval app. No raw JSON, no error code enums, no terminal-style output in the UI.
 - HARD_BLOCK is for truly destructive actions only. All other risky actions → `REQUIRE_CONFIRMATION` (ask, don't block).
+
+### Premium Notch UI v1 — Harness-Only State
+
+> Added May 29, 2026 after Codex Premium Notch UI cleanup. This is UI surface/state work only; do not mark it as a backend PASS/LOCKED slice.
+
+Active UI file remains `app/harness.html`; chat/sandbox wiring remains `app/harness.js`. `app/index.html` is still reference/prototype only.
+
+Current harness UI state:
+- Notch preview now separates grey menu-bar/screen area from black hardware notch and black/glass software notch surface.
+- Harness context control: Ableton Open = Studio surface; Ableton Closed = Freeform surface. Do not expose Studio/Freeform as product tabs.
+- Studio tabs: Session, Tasks, Meters, Assistants. Freeform tabs: Ask, Learn, Notes, Assistants.
+- Collapsed Studio notch shows mock stereo meter only when Audio = Playing. Silent and Freeform collapsed states stay quiet/no text.
+- Voice states: Listening, Thinking, Applying, Done, Can't verify. These avoid the hardware notch dead zone and expand horizontally.
+- Studio Session is premium overview plus small Ask Conductor input. Attached chat opens from that input and can take over the panel.
+- Attached chat preserves history through hide/show, collapses on outside click, keeps message scrolling, and has developer-only mock response preview controls.
+- Floating chat is detachable, directly resizable by corner, hideable, and re-attachable. Auto Exec label toggles Auto Exec / Auto On. Analyze and Auto Exec only show short timed glows.
+- Studio Tasks/Meters/Assistants have cleaned premium mock layouts. Meter Strip is mock Compact/Hidden only.
+- Debug/dev/test controls live under Advanced/Harness. Keep raw parser output, token/cost, proof IDs, mock controls, and technical toggles out of the main premium surface.
+
+Do not regress:
+- No backend behavior changes for this UI work.
+- No real meter engine.
+- No production assistant routing.
+- No screen agents / Surface OS.
+- Preserve detached/freeflow chat code unless explicitly scoped.
+- Preserve Studio/Freeform contextual tab logic.
+
+Verification performed for this UI work: static checks only (`node --check app/harness.js` and inline script syntax check on `app/harness.html`). No browser/Playwright/manual visual tests were run by Codex.
 
 ---
 

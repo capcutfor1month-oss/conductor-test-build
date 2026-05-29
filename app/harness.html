@@ -2040,6 +2040,33 @@
     transition: border-color 150ms, color 150ms;
   }
   .btn-copy:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+
+  /* ── KNOWLEDGE FEEDBACK CHIPS (Build 16) ── */
+  /* Chips appear only under type:"answer" Conductor responses. */
+  /* Match .btn-copy muted style — no new visual system introduced. */
+  .fb-chips {
+    display: flex; gap: 5px; margin-top: 6px; align-items: center;
+  }
+  .fb-chip {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 150ms, color 150ms;
+  }
+  .fb-chip:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+  .fb-chip[data-sent] { opacity: 0.4; pointer-events: none; }
+  .fb-sub {
+    display: none;
+    gap: 5px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
   .btn-execute {
     background: linear-gradient(135deg, rgba(52,211,153,0.12), rgba(16,185,129,0.08));
     border: 1px solid rgba(52,211,153,0.3);
