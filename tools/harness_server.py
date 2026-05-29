@@ -31,6 +31,22 @@ _STRUCTURAL_RE = re.compile(
     r")\b"
 )
 
+# ── Build 11/12 trust-label leak guard ───────────────────────────────────────────
+# Detects internal context-pack and critic-prompt labels that must never appear
+# in user-facing composed text.  Used in _compose_final_answer() to fall back to
+# the explorer answer if the selected candidate direction/rationale was somehow
+# contaminated with these strings.
+_TRUST_LABEL_RE = re.compile(
+    r"(?i)("
+    r"KNOWLEDGE\s+STATUS"
+    r"|Plugin\s+Knowledge\s+Context"
+    r"|Operator\s+card:\s+not\s+available"
+    r"|knowledge_evidence"
+    r"|confidence\s*<="
+    r"|confidence\s*≤"  # ≤ (unicode less-than-or-equal)
+    r")"
+)
+
 # ── Action-mapping system prompt (parse_intent only) ──────────────────────────
 SYSTEM_PROMPT = """You are Conductor, an AI music production assistant for Ableton Live.
 The user will give you a natural language instruction about their Ableton session.
@@ -915,6 +931,12 @@ def _compose_final_answer(explorer_answer, explorer_data, critic_data):
 
     # Safety guard: never expose internal schema markers in the composed answer
     if _STRUCTURAL_RE.search(composed) or composed.strip().startswith("{"):
+        return explorer_answer
+
+    # Build 11/12 trust-label guard: never expose context-pack or critic-prompt
+    # internal labels (KNOWLEDGE STATUS, Plugin Knowledge Context, etc.) that
+    # could appear if an LLM echoed them back into candidate direction/rationale.
+    if _TRUST_LABEL_RE.search(composed):
         return explorer_answer
 
     return composed

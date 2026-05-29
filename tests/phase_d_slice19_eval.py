@@ -572,6 +572,188 @@ def run_d184():
     return errors
 
 
+# ── Section D185 ──────────────────────────────────────────────────────────────
+
+@section("D185")
+def run_d185():
+    """
+    _compose_final_answer trust-label guard: when selected candidate
+    direction or rationale contains any Build 11/12 internal marker,
+    the function falls back to explorer_answer instead of leaking it.
+
+    Markers tested individually:
+      KNOWLEDGE STATUS, Plugin Knowledge Context, Operator card: not available,
+      knowledge_evidence, confidence <=, confidence ≤
+    """
+    print("=== Section D185: _compose_final_answer trust-label guard — adversarial markers ===")
+    hs_mod = importlib.import_module("tools.harness_server")
+    errors = []
+
+    EXPLORER_FALLBACK = "Use general EQ principles for this plugin."
+
+    # Each tuple: (label, direction, rationale)
+    # All should trigger the trust-label guard and fall back to EXPLORER_FALLBACK.
+    adversarial_cases = [
+        (
+            "KNOWLEDGE STATUS in direction",
+            "## KNOWLEDGE STATUS — Diva filter has no card",
+            "Start with a gentle low-pass.",
+        ),
+        (
+            "KNOWLEDGE STATUS in rationale",
+            "Use a gentle low-pass on Diva",
+            "Note: ## KNOWLEDGE STATUS says Operator card: not available.",
+        ),
+        (
+            "Plugin Knowledge Context in direction",
+            "## Plugin Knowledge Context: Diva recognized, no card",
+            "Apply general subtractive synthesis.",
+        ),
+        (
+            "Operator card: not available in direction",
+            "Operator card: not available — using general principles",
+            "Cut around 4kHz for brightness.",
+        ),
+        (
+            "knowledge_evidence in rationale",
+            "Use a moderate filter sweep on Diva",
+            "knowledge_evidence criterion says this is unverified — low confidence.",
+        ),
+        (
+            "confidence <= in direction",
+            "Low confidence <= 0.5 — general advice only for Diva",
+            "Start with 4kHz low-pass.",
+        ),
+        (
+            "confidence ≤ in rationale",
+            "Use general synthesis principles for Diva filter",
+            "confidence ≤ 0.5 because no Operator Card exists.",
+        ),
+    ]
+
+    base_candidates = [
+        {
+            "direction": "Clean fallback direction",
+            "rationale": "Clean fallback rationale",
+            "session_facts_used": [],
+            "assumptions": [],
+            "source_hints": [],
+            "actionable": True,
+            "confidence": 0.8,
+        },
+        # slot 1 will be replaced per case
+        {
+            "direction": "",
+            "rationale": "",
+            "session_facts_used": [],
+            "assumptions": [],
+            "source_hints": [],
+            "actionable": True,
+            "confidence": 0.4,
+        },
+    ]
+
+    for case_label, dirty_direction, dirty_rationale in adversarial_cases:
+        # Build candidates with contaminated selected entry at index 1
+        candidates = [
+            base_candidates[0].copy(),
+            {
+                "direction": dirty_direction,
+                "rationale": dirty_rationale,
+                "session_facts_used": [],
+                "assumptions": [],
+                "source_hints": [],
+                "actionable": True,
+                "confidence": 0.4,
+            },
+        ]
+        explorer_data = {"question_type": "creative", "candidates": candidates}
+        critic_data = {"selected": 1, "kept": [1], "rejected": [0],
+                       "reasons": {}, "critic_summary": "test"}
+
+        result = hs_mod._compose_final_answer(EXPLORER_FALLBACK, explorer_data, critic_data)
+
+        if result != EXPLORER_FALLBACK:
+            errors.append(
+                f"[{case_label}] expected fallback to explorer_answer, "
+                f"got {result!r}"
+            )
+
+    # Sanity: clean direction/rationale with no markers must NOT fall back
+    clean_candidates = [
+        {
+            "direction": "Use a gentle low-pass on the Diva filter",
+            "rationale": "Starting point for subtractive synthesis — roll off above 6kHz",
+            "session_facts_used": [],
+            "assumptions": ["No Operator Card — using general principles"],
+            "source_hints": [],
+            "actionable": True,
+            "confidence": 0.45,
+        },
+    ]
+    clean_data = {"question_type": "creative", "candidates": clean_candidates}
+    clean_critic = {"selected": 0, "kept": [0], "rejected": [], "reasons": {},
+                    "critic_summary": "test"}
+    clean_result = hs_mod._compose_final_answer(EXPLORER_FALLBACK, clean_data, clean_critic)
+    if clean_result == EXPLORER_FALLBACK:
+        errors.append(
+            "sanity check failed: clean direction/rationale incorrectly fell back "
+            f"to explorer_answer; got {clean_result!r}"
+        )
+    if "low-pass" not in clean_result:
+        errors.append(
+            f"sanity check: clean composed text missing expected content; got {clean_result!r}"
+        )
+
+    return errors
+
+
+# ── Section D186 ──────────────────────────────────────────────────────────────
+
+@section("D186")
+def run_d186():
+    """
+    _TRUST_LABEL_RE symbol exists at module level and matches each marker
+    individually (unit test for the regex itself, independent of compose).
+    """
+    print("=== Section D186: _TRUST_LABEL_RE symbol + per-marker unit coverage ===")
+    hs_mod = importlib.import_module("tools.harness_server")
+    errors = []
+
+    if not hasattr(hs_mod, "_TRUST_LABEL_RE"):
+        errors.append("_TRUST_LABEL_RE not found on harness_server module")
+        return errors
+
+    rx = hs_mod._TRUST_LABEL_RE
+
+    should_match = [
+        ("KNOWLEDGE STATUS",            "## KNOWLEDGE STATUS — Diva"),
+        ("Plugin Knowledge Context",    "## Plugin Knowledge Context block injected"),
+        ("Operator card: not available","Operator card: not available — general only"),
+        ("knowledge_evidence",          "apply knowledge_evidence criterion here"),
+        ("confidence <=",               "confidence <= 0.5 for this candidate"),
+        ("confidence ≤",                "confidence ≤ 0.5 — unverified plugin claim"),
+        # case-insensitive variants
+        ("KNOWLEDGE STATUS lower",      "knowledge status block present"),
+        ("knowledge_evidence upper",    "KNOWLEDGE_EVIDENCE applied"),
+    ]
+    for label, text in should_match:
+        if not rx.search(text):
+            errors.append(f"_TRUST_LABEL_RE did not match [{label}]: {text!r}")
+
+    should_not_match = [
+        ("clean direction", "Use a gentle low-pass on the filter"),
+        ("clean rationale", "Starting point for subtractive synthesis"),
+        ("assumption text", "No Operator Card — using general principles"),
+        ("normal confidence word", "This approach is high-confidence"),
+    ]
+    for label, text in should_not_match:
+        if rx.search(text):
+            errors.append(f"_TRUST_LABEL_RE false-positive on [{label}]: {text!r}")
+
+    return errors
+
+
 # ── Runner ────────────────────────────────────────────────────────────────────
 
 def main():

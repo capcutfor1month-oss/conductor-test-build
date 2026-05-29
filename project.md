@@ -1074,4 +1074,33 @@ D31 initially failed because `_make_proof()` test helper created an in-memory di
 
 ---
 
-*Last updated: May 2026 — Phase D through Slice 18 (Build 11 — Plugin Knowledge Trust Signals) complete. Slices 9–18 and Expanded Actions 1–3A all PASS/LOCKED. Builds 1–11 locked.*
+### Audit 14 — May 2026 (Build 12 — Knowledge Status Context to Critic / D Slice 19)
+
+**Phase D Slice 19 — Knowledge Status Context to Critic (D177–D186): PASS/LOCKED**
+
+> Do not reopen unless a regression appears in `tests/phase_d_slice19_eval.py`.
+
+- `_extract_knowledge_status_context(message_pack_text, max_chars=600)` in `tools/harness_server.py` — extracts `## KNOWLEDGE STATUS` block from `/context/pack` text; stops at the next `##` section; returns `""` when absent. Mirrors `_extract_operator_card_context()`.
+- `_build_critic_prompt()` — `knowledge_status_context=""` param added; injects `## Plugin Knowledge Context` block (internal only) when present, directing Critic to apply `knowledge_evidence` and penalize unacknowledged plugin-specific claims.
+- `call_creative_critic()` — `knowledge_status_context=""` param added; passed through to `_build_critic_prompt()`.
+- `_handle_orchestrate()` — extracts `knowledge_status_context` from `message_pack_text` and passes to `call_creative_critic()` alongside `card_context`. Closes the gap where `knowledge_evidence` criterion had no direct context to evaluate.
+- `_TRUST_LABEL_RE` — new module-level regex covering 6 internal trust labels: `KNOWLEDGE STATUS`, `Plugin Knowledge Context`, `Operator card: not available`, `knowledge_evidence`, `confidence <=`, `confidence ≤`.
+- `_compose_final_answer()` — trust-label guard added using `_TRUST_LABEL_RE`: if selected-candidate `direction` or `rationale` contains any marker, falls back to `explorer_answer`. Blocks Build 11/12 internal labels from leaking into user-facing composed text.
+- `tests/phase_d_slice15_eval.py` and `tests/phase_d_slice16_eval.py` — two `fake_critic` mock signatures each updated to accept `knowledge_status_context=""` (required by new kwarg, no behavior change).
+- `tests/phase_d_slice19_eval.py` — **10/10 PASS** (D177–D186): extractor tests (D177–D179), critic prompt injection (D180–D182), orchestrate integration (D183–D184), adversarial trust-label fallback (D185), `_TRUST_LABEL_RE` unit coverage (D186).
+
+**Codex audit result:** PASS — Build 12 locked.
+
+**Full audit evidence:**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice19_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+
+---
+
+*Last updated: May 2026 — Phase D through Slice 19 (Build 12 — Knowledge Status Context to Critic) complete. Slices 9–19 and Expanded Actions 1–3A all PASS/LOCKED. Builds 1–12 locked.*

@@ -11,6 +11,7 @@ Phase D Slices 1–5 are complete and audited (PASS/LOCKED).
 Expanded Actions Slice 1 is PASS/LOCKED (track_create, track_delete, track_duplicate, track_arm, track_monitor, track_rename, track_color, return_track_create, tracks_create_multiple).
 Expanded Actions Slice 2 is PASS/LOCKED (track_send, track_route, transport_play, transport_stop, transport_record, transport_loop, transport_metronome).
 Expanded Actions Slice 3A (`POST /action/plugin_bypass`) is PASS/LOCKED (9/9 tests).
+Live Harness Slices 9–19 are PASS/LOCKED (Builds 6–12, Knowledge Explorer through Knowledge Status Context to Critic).
 All test suites pass. Phase C is stable.
 Live Harness v1.5 is present (`app/harness.html`) — product-preview shell, not final shipped UI.
 Product-layer re-alignment is pending (docs → harness UX → session-state → metadata hiding).
@@ -32,6 +33,10 @@ Product-layer re-alignment is pending (docs → harness UX → session-state →
 | Expanded Actions Slice 1 — Create, Delete, Duplicate, Color, Rename, Group tracks | ✅ Complete (PASS/LOCKED) |
 | Expanded Actions Slice 2 — Routing, Sends, Arm, Monitor | ✅ Complete (PASS/LOCKED) |
 | Expanded Actions Slice 3A — `POST /action/plugin_bypass` | ✅ Complete (PASS/LOCKED) |
+| D Slice 16 — Card-aware Creative Critic v1 (Build 8) | ✅ Complete (PASS/LOCKED — 8/8) |
+| D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10) | ✅ Complete (PASS/LOCKED — 8/8) |
+| D Slice 18 — Plugin Knowledge Trust Signals (Build 11) | ✅ Complete (PASS/LOCKED — 8/8) |
+| D Slice 19 — Knowledge Status Context to Critic (Build 12) | ✅ Complete (PASS/LOCKED — 10/10) |
 
 ---
 

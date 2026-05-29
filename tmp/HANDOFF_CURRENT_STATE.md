@@ -23,6 +23,10 @@
 | D Slice 13 — `/session/state` v1.5 | D128–D134 | `phase_d_slice13_eval.py` | ✅ LOCKED — 7/7 PASS |
 | D Slice 14 — Knowledge Explorer v1 (Build 6 hardening) | D135–D142 | `phase_d_slice14_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 15 — Creative Critic v1 (Build 7) | D143–D153 | `phase_d_slice15_eval.py` | ✅ LOCKED — 11/11 PASS |
+| D Slice 16 — Card-aware Creative Critic v1 (Build 8) | D154–D161 | `phase_d_slice16_eval.py` | ✅ LOCKED — 8/8 PASS |
+| D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10) | D162–D168 | `phase_d_slice17_eval.py` | ✅ LOCKED — 8/8 PASS |
+| D Slice 18 — Plugin Knowledge Trust Signals (Build 11) | D169–D176 | `phase_d_slice18_eval.py` | ✅ LOCKED — 8/8 PASS |
+| D Slice 19 — Knowledge Status Context to Critic (Build 12) | D177–D186 | `phase_d_slice19_eval.py` | ✅ LOCKED — 10/10 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -32,6 +36,10 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+phase_d_slice19_eval.py — 10/10 PASS  (D177–D186, Knowledge Status Context to Critic — Build 12)
+phase_d_slice18_eval.py — 8/8   PASS  (D169–D176, Plugin Knowledge Trust Signals — Build 11)
+phase_d_slice17_eval.py — 8/8   PASS  (D162–D168, Plugin Knowledge Routing v1)
+phase_d_slice16_eval.py — 8/8   PASS  (D154–D161, Card-aware Creative Critic v1)
 phase_d_slice15_eval.py — 11/11 PASS  (D143–D153, Creative Critic v1 + filtering proof)
 phase_d_slice14_eval.py — 8/8   PASS  (D135–D142, Knowledge Explorer v1)
 phase_d_slice13_eval.py — 7/7   PASS

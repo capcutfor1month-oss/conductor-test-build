@@ -18,7 +18,7 @@ Mark ✅ when built + tested + logged into project.md / LIMITATIONS.md.
 Phase A — ✅ COMPLETE
 Phase B — ✅ COMPLETE
 Phase C — ✅ COMPLETE
-Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–18 complete)
+Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–19 complete)
 Phase E — NOT STARTED
 
 ### Locked Slices (current build)
@@ -37,6 +37,7 @@ Phase E — NOT STARTED
 - D Slice 16 — Card-aware Creative Critic v1 (Build 8): PASS/LOCKED
 - D Slice 17 — Plugin Knowledge Routing v1 (Builds 9 + 10): PASS/LOCKED
 - D Slice 18 — Plugin Knowledge Trust Signals (Build 11): PASS/LOCKED
+- D Slice 19 — Knowledge Status Context to Critic (Build 12): PASS/LOCKED
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -736,6 +737,35 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | `tests/test_vault_integrity.py` | 15/15 PASS |
 | `node --check app/harness.js` | PASS |
 | `python3 -m py_compile rag/risk_taxonomy.py rag/context_pack_builder.py tools/harness_server.py` | PASS |
+
+---
+
+### Phase D — Slice 19 (Knowledge Status Context to Critic — Build 12) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice19_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S19 | `_extract_knowledge_status_context(message_pack_text, max_chars=600)` — extracts `## KNOWLEDGE STATUS` block from `/context/pack` text; stops at next `##` section; returns `""` if absent. Mirrors `_extract_operator_card_context()`. | `tools/harness_server.py` | ✅ |
+| D-S19 | `_build_critic_prompt()` — `knowledge_status_context=""` param added; injects `## Plugin Knowledge Context` block (internal only) when present, instructing Critic to apply `knowledge_evidence` criterion and penalize unacknowledged plugin-specific claims. | `tools/harness_server.py` | ✅ |
+| D-S19 | `call_creative_critic()` — `knowledge_status_context=""` param added; passed through to `_build_critic_prompt()`. | `tools/harness_server.py` | ✅ |
+| D-S19 | `_handle_orchestrate()` — extracts `knowledge_status_context` from `message_pack_text` and passes to `call_creative_critic()` alongside `card_context`. Closes the gap where `knowledge_evidence` had no direct context. | `tools/harness_server.py` | ✅ |
+| D-S19 | `_TRUST_LABEL_RE` — new module-level regex guarding 6 internal trust labels: `KNOWLEDGE STATUS`, `Plugin Knowledge Context`, `Operator card: not available`, `knowledge_evidence`, `confidence <=`, `confidence ≤`. | `tools/harness_server.py` | ✅ |
+| D-S19 | `_compose_final_answer()` — trust-label guard added: if selected-candidate `direction` or `rationale` contains any `_TRUST_LABEL_RE` match, falls back to `explorer_answer` (same pattern as existing `_STRUCTURAL_RE` guard). Blocks Build 11/12 internal labels from leaking into user-facing composed text. | `tools/harness_server.py` | ✅ |
+| D-S19 | Phase D Slice 19 eval suite | `tests/phase_d_slice19_eval.py` — D177–D186, 10/10 PASS | ✅ |
+| D-S19 | Slice 15/16 mock signatures updated | `tests/phase_d_slice15_eval.py`, `tests/phase_d_slice16_eval.py` — two `fake_critic` side-effects each updated to accept `knowledge_status_context=""` (required by new kwarg, no behavior change) | ✅ |
+
+**Codex audit result:** PASS — Build 12 can be locked.
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice19_eval.py` | 10/10 PASS |
+| `tests/phase_d_slice18_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice17_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice16_eval.py` | 8/8 PASS |
+| `tests/phase_d_slice15_eval.py` | 11/11 PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
 
 ---
 
