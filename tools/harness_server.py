@@ -891,6 +891,60 @@ def call_creative_critic(
         return {}, tokens
 
 
+# ── Critic answer composer helpers ────────────────────────────────────────────
+
+def _safe_session_facts(facts):
+    """
+    Filter session_facts_used to strings safe for user-facing output.
+
+    Strips the 'Selected track:' prefix produced by _format_session_state().
+    Drops:
+      - internal schema markers (_STRUCTURAL_RE matches)
+      - trust labels (_TRUST_LABEL_RE matches)
+      - Operator Card references (internal plugin doc labels)
+      - markdown headers (start with '#')
+      - snake_case internal key names (session_facts_used, knowledge_evidence, …)
+      - JSON-looking facts (start with '{' or '[')
+      - internal metadata key:value pairs (mode:, risk:, score:, selected:, kept:, rejected:)
+      - ID references (proof id, request id, action id — space form;
+        underscore forms already caught by snake_case check)
+      - entries over 60 characters
+
+    Build 13: used by _compose_final_answer() for light session-fact weaving.
+    """
+    safe = []
+    for f in (facts or []):
+        f = str(f).strip()
+        # Strip "Selected track:" prefix injected by _format_session_state()
+        if re.match(r'(?i)selected\s+track:\s*', f):
+            f = re.sub(r'(?i)selected\s+track:\s*', '', f).strip()
+        if not f or len(f) > 60:
+            continue
+        # Skip markdown headers
+        if f.startswith('#'):
+            continue
+        # Skip JSON-looking facts
+        if f.startswith('{') or f.startswith('['):
+            continue
+        # Skip internal schema markers and trust labels
+        if _STRUCTURAL_RE.search(f) or _TRUST_LABEL_RE.search(f):
+            continue
+        # Skip Operator Card references (internal plugin documentation labels)
+        if re.search(r'(?i)\bOperator\s+Card\b', f):
+            continue
+        # Skip snake_case internal key names (session_facts_used, source_hints, …)
+        if re.search(r'\b\w+_\w+\b', f):
+            continue
+        # Skip internal metadata key:value pairs
+        if re.match(r'(?i)(mode|risk|score[s]?|selected|kept|rejected)\s*:', f):
+            continue
+        # Skip ID references (space-separated form; underscore form caught above)
+        if re.search(r'(?i)\b(proof|request|action)\s+id\b', f):
+            continue
+        safe.append(f)
+    return safe
+
+
 # ── Critic answer composer ─────────────────────────────────────────────────────
 
 def _compose_final_answer(explorer_answer, explorer_data, critic_data):
@@ -898,14 +952,18 @@ def _compose_final_answer(explorer_answer, explorer_data, critic_data):
     Deterministic composer: derive the final user-facing answer from the
     Critic-selected candidate. No LLM call.
 
-    If Critic selected a valid candidate index → compose from that candidate's
-    `direction` and `rationale` fields.
-    If Critic is empty, malformed, or the selected index is out of range →
-    fall back to `explorer_answer` unchanged.
+    Build 13: improved prose joining and light session_facts_used weaving.
+    - Short direction labels (≤ 8 words) + rationale → em-dash connector for
+      natural one-sentence flow instead of two separate statements.
+    - Longer directions (already sentence-length) keep the period separator.
+    - Safe, novel session_facts_used entries are appended as a parenthetical
+      grounding note (at most 2, only when not already present in the text).
+    - All safety guards (_STRUCTURAL_RE, _TRUST_LABEL_RE) unchanged.
 
-    Safety: the composed text is checked against `_STRUCTURAL_RE`. If it
-    accidentally contains an internal schema marker the function falls back to
-    `explorer_answer` rather than exposing schema text to the user.
+    If Critic selected a valid candidate index → compose from that candidate's
+    direction, rationale, and session_facts_used.
+    If Critic is empty, malformed, or the selected index is out of range →
+    fall back to explorer_answer unchanged.
     """
     if not critic_data:
         return explorer_answer
@@ -927,15 +985,39 @@ def _compose_final_answer(explorer_answer, explorer_data, critic_data):
     if not direction:
         return explorer_answer
 
-    composed = f"{direction}. {rationale}." if rationale else f"{direction}."
+    # Build 13: natural prose joining.
+    # Strip trailing punctuation so connectors land cleanly regardless of
+    # how the LLM ended each field.
+    dir_clean = direction.rstrip(". ")
+    rat_clean = rationale.rstrip(". ") if rationale else ""
 
-    # Safety guard: never expose internal schema markers in the composed answer
+    if rat_clean:
+        # Short direction labels read better with an em-dash connector —
+        # they merge into one flowing sentence instead of two blunt fragments.
+        # Longer directions are already sentence-length; keep the period.
+        if len(dir_clean.split()) <= 8:
+            composed = f"{dir_clean} — {rat_clean}."
+        else:
+            composed = f"{dir_clean}. {rat_clean}."
+    else:
+        composed = f"{dir_clean}."
+
+    # Build 13: light session_facts_used weaving.
+    # Only inject facts that are safe and not already present in the text.
+    # Formatted as a parenthetical grounding note at the end.
+    facts       = selected.get("session_facts_used") or []
+    safe_facts  = _safe_session_facts(facts)
+    novel_facts = [f for f in safe_facts if f.lower() not in composed.lower()]
+    if novel_facts:
+        fact_str = ", ".join(novel_facts[:2])
+        composed = f"{composed.rstrip('.')} ({fact_str})."
+
+    # Safety guard: never expose internal schema markers in the composed answer.
     if _STRUCTURAL_RE.search(composed) or composed.strip().startswith("{"):
         return explorer_answer
 
     # Build 11/12 trust-label guard: never expose context-pack or critic-prompt
-    # internal labels (KNOWLEDGE STATUS, Plugin Knowledge Context, etc.) that
-    # could appear if an LLM echoed them back into candidate direction/rationale.
+    # internal labels that an LLM might echo into candidate direction/rationale.
     if _TRUST_LABEL_RE.search(composed):
         return explorer_answer
 

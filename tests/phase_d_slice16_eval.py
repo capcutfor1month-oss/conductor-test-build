@@ -229,12 +229,14 @@ def run_d154():
         _EXPLORER_DATA,
         {"selected": 1, "kept": [1], "rejected": [0]},
     )
+    # Build 13: short direction (6 words ≤ 8) now uses em-dash connector.
+    # "Operator Card — Ozone 12" fact is filtered by _safe_session_facts (Operator Card ref).
     expected = (
-        "Use gentle Ozone mastering moves. "
+        "Use gentle Ozone mastering moves — "
         "The card warns against aggressive maximizer gain on already-hot masters."
     )
     if answer != expected:
-        errors.append(f"Build 7 composer changed: got {answer!r}")
+        errors.append(f"Build 13 composer changed: got {answer!r}")
 
     return errors
 
@@ -347,7 +349,8 @@ def run_d157():
     if "## OTHER CONTEXT" in card_context:
         errors.append("critic received context beyond the card block")
     text = (h._cap_data or {}).get("text", "")
-    if not text.startswith("Use gentle Ozone mastering moves."):
+    # Build 13: em-dash connector for short direction (6 words ≤ 8)
+    if not text.startswith("Use gentle Ozone mastering moves —"):
         errors.append(f"final answer did not follow selected card-compliant candidate: {text!r}")
     _check_no_internal_exposure(text, "D157 text", errors)
 
