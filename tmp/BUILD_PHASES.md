@@ -1,7 +1,7 @@
 # Conductor — Build Phases Temporary Memory
 > DELETE THIS FILE once all phases are built, tested, and logged into relevant MD files.
 > Purpose: survive context compaction. Resume from here after any session reset.
-> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED.
+> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED.
 
 ---
 
@@ -46,6 +46,7 @@ Phase E — NOT STARTED
 - D Slice 25 — Memory Promotion v1 / Promotion Candidate Generator (Build 18): PASS/LOCKED — commit 9b63bac
 - D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19): PASS/LOCKED
 - D Slice 27 — Controlled Memory Writer v1 (Build 20): ✅ PASS/LOCKED — 97/97 PASS
+- D Slice 28 — Taste Context Injection v1 (Build 21): ✅ PASS/LOCKED — 80/80 PASS
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -833,6 +834,32 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | `tests/phase_d_slice15_eval.py` | 11/11 PASS |
 | `python3 -m py_compile tools/harness_server.py` | PASS |
 | `node --check app/harness.js` | PASS |
+
+---
+
+### Phase D — Slice 28 (Taste Context Injection v1 — Build 21) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice28_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S28 | `rag/taste_context.py` — reads `session_reflection_log.jsonl`, filters `accepted_signals` through 4 gates, returns compact `## Taste Context` block or `""`. | `rag/taste_context.py` | ✅ |
+| D-S28 | Gate 1: scope must be `session_only` or `session_project`. Gate 2: no negative feedback types. Gate 3: `suggested_level` ≤ 2. Gate 4: `session_project` requires both `project_id` non-empty and matching. | `rag/taste_context.py` | ✅ |
+| D-S28 | `_is_clean_text()` — rejects internal labels, schema field names, space-separated ID labels, key:value pairs (`action:`, `target:`, `track:Kick`), all-caps enums, JSON, long hex tokens (12+ chars), UUIDs. | `rag/taste_context.py` | ✅ |
+| D-S28 | Soft import in `harness_server.py` — `from rag.taste_context import build_taste_context as _load_taste_context` with try/except no-op fallback. | `tools/harness_server.py` | ✅ |
+| D-S28 | `_TRUST_LABEL_RE` extended with `\|Taste\s+Context` — blocks taste block from leaking into `_compose_final_answer` output. | `tools/harness_server.py` | ✅ |
+| D-S28 | `_build_critic_prompt()` + `call_creative_critic()` — `taste_context=""` param added; injected as internal-only block with "do not surface" instruction. | `tools/harness_server.py` | ✅ |
+| D-S28 | Taste context loaded inside `if mode in _EXPLORER_MODES:` branch only — WRITE/action path never touched. | `tools/harness_server.py` | ✅ |
+| D-S28 | Phase D Slice 28 eval suite | `tests/phase_d_slice28_eval.py` — D282–D297, 80/80 PASS | ✅ |
+
+**Codex audit result:** PASS — Build 21 locked.
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice28_eval.py` | 80/80 PASS |
+| `python3 -m py_compile tools/harness_server.py` | PASS |
+| `python3 -m py_compile rag/taste_context.py` | PASS |
 
 ---
 

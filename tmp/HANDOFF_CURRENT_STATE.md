@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED.
+> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED.
 
 ---
 
@@ -35,6 +35,7 @@
 | D Slice 25 — Memory Promotion v1 / Candidate Generator (Build 18) | D229–D248 | `phase_d_slice25_eval.py` | ✅ LOCKED — 59/59 PASS — commit 9b63bac |
 | D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19) | D249–D265 | `phase_d_slice26_eval.py` | ✅ LOCKED — 41/41 PASS |
 | D Slice 27 — Controlled Memory Writer v1 (Build 20) | D266–D281 | `phase_d_slice27_eval.py` | ✅ PASS/LOCKED — 97/97 PASS |
+| D Slice 28 — Taste Context Injection v1 (Build 21) | D282–D297 | `phase_d_slice28_eval.py` | ✅ PASS/LOCKED — 80/80 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -44,6 +45,11 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+[Build 21 — Taste Context Injection v1]
+phase_d_slice28_eval.py — 80/80 PASS  (D282–D297, Taste Context Injection v1 — Build 21)
+python3 -m py_compile rag/taste_context.py  PASS
+python3 -m py_compile tools/harness_server.py  PASS
+
 [Build 20 — Controlled Memory Writer v1]
 phase_d_slice27_eval.py — 97/97 PASS  (D266–D281, Controlled Memory Writer v1 — Build 20)
 phase_d_slice26_eval.py — 41/41 PASS  (D249–D265, Session Reflection v1 — Build 19, regression)
@@ -81,6 +87,70 @@ phase_d_slice9_eval.py  — 6/6   PASS
 test_vault_integrity.py — 15/15 PASS
 node --check app/harness.js     PASS
 python3 -m py_compile tools/harness_server.py  PASS
+```
+
+---
+
+## BUILD 21 — PASS/LOCKED
+
+```
+Build:               Build 21 — Taste Context Injection v1
+
+Last completed step: rag/taste_context.py created — read-only taste signal helper.
+                     build_taste_context(reflection_path, project_id, reflection) → str.
+                     Reads accepted_signals from Build 19/20 session_reflection_log.jsonl.
+                     Gate 1: scope ∈ {session_only, session_project}.
+                     Gate 2: feedback_type not in negative set.
+                     Gate 3: suggested_level ≤ 2.
+                     Gate 4: session_project requires both project_ids non-empty and equal.
+                     _is_clean_text(): blocks schema fields, ID labels, key:value pairs,
+                     all-caps enums, JSON, long hex tokens (12+ chars), UUIDs.
+                     Returns compact "## Taste Context\n- ..." block or "".
+                     harness_server.py wired: soft import, _TRUST_LABEL_RE extended,
+                     _build_critic_prompt + call_creative_critic get taste_context="" param,
+                     taste context loaded inside Explorer-mode branch only.
+                     tests/phase_d_slice28_eval.py: D282–D297, 80/80 PASS.
+
+Files changed:
+  rag/taste_context.py (new)
+    - build_taste_context(reflection_path=None, project_id=None, reflection=None) → str
+    - _load_latest_reflection(path) — reads last JSONL record
+    - _is_clean_text(text) — multi-pattern guard (internal labels, hex IDs, UUIDs)
+    - _signal_text(signal) — evidence → message → action_type+target fallback
+    - _INTERNAL_LABEL_RE, _ALLCAPS_ENUM_RE, _JSON_RE
+    - _LEVEL_CAP = 2, _MAX_SIGNALS = 5, _MAX_CHARS = 480
+    - TASTE_HEADER = "## Taste Context" (exported for trust-label guard)
+
+  tools/harness_server.py (modified)
+    - Soft import: from rag.taste_context import build_taste_context as _load_taste_context
+    - _TRUST_LABEL_RE: added |Taste\s+Context
+    - _build_critic_prompt(): taste_context="" param + injection block
+    - call_creative_critic(): taste_context="" param pass-through
+    - _handle_orchestrate(): taste loading inside if mode in _EXPLORER_MODES: branch
+
+  tests/phase_d_slice28_eval.py (new)
+    - D282–D297, 80/80 PASS
+
+  tmp/BUILD_PHASES.md + tmp/HANDOFF_CURRENT_STATE.md
+    - Build 21 state recorded
+
+Tests run:           phase_d_slice28_eval.py  80/80 PASS
+                     python3 -m py_compile rag/taste_context.py  PASS
+                     python3 -m py_compile tools/harness_server.py  PASS
+
+Current failure:     none — all passing
+Codex result:        PASS/LOCKED
+
+Do-not-touch list:   rag/memory_promotion.py (locked Build 18)
+                     rag/session_reflection.py (locked Build 19)
+                     rag/memory_writer.py (locked Build 20)
+                     tools/conductor_bridge.py
+                     app/*
+                     memory/chromadb/
+                     memory/*.jsonl (runtime logs)
+                     conductor-vault/producer/never_do_rules.md
+                     conductor-vault/producer/confirmed_preferences.md
+                     phase_d_slice1–27_eval.py (all locked)
 ```
 
 ---

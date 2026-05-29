@@ -24,6 +24,16 @@ BRIDGE_URL = "http://localhost:4611"
 # Never written to by bridge, rag, or action paths.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_HERE)
+
+# ── Build 21: Taste Context (rag.taste_context, non-fatal soft import) ───────
+# Adds safe Level 1–2 session/project memory nudge to the Creative Critic.
+# Server starts normally even if rag module is unavailable — returns "" silently.
+try:
+    if _PROJECT_ROOT not in sys.path:
+        sys.path.insert(0, _PROJECT_ROOT)
+    from rag.taste_context import build_taste_context as _load_taste_context
+except Exception:
+    def _load_taste_context(**_kw): return ""  # type: ignore[misc]
 _MEMORY_DIR = os.path.join(_PROJECT_ROOT, "memory")
 _KFBL_LOG_PATH = os.path.join(_MEMORY_DIR, "knowledge_feedback_log.jsonl")
 _kfbl_write_lock = threading.Lock()
@@ -61,6 +71,7 @@ _TRUST_LABEL_RE = re.compile(
     r"|knowledge_evidence"
     r"|confidence\s*<="
     r"|confidence\s*≤"  # ≤ (unicode less-than-or-equal)
+    r"|Taste\s+Context"  # Build 21 — taste block is internal-only
     r")"
 )
 
@@ -712,7 +723,7 @@ Respond ONLY with valid JSON — no markdown fences, no preamble:
 
 
 def _build_critic_prompt(candidates, question_text, session_context, card_context="",
-                         knowledge_status_context=""):
+                         knowledge_status_context="", taste_context=""):
     """
     Build the compact critic evaluation prompt.
     candidates: list of candidate dicts from the Explorer.
@@ -722,6 +733,9 @@ def _build_critic_prompt(candidates, question_text, session_context, card_contex
         (Build 12). When present, tells Critic the plugin is recognized but has no
         Operator Card — grounds the knowledge_evidence criterion in actual context.
         Internal only; never surfaced in user-facing output.
+    taste_context: optional ## Taste Context block (Build 21). Safe Level 1–2
+        session/project memory signals — nudges candidate selection toward the
+        producer's established patterns. Internal only; never surfaced in output.
     """
     parts = [
         "## Creative Critic",
@@ -749,6 +763,14 @@ def _build_critic_prompt(candidates, question_text, session_context, card_contex
             "- Reward candidates that note the gap and frame plugin-specific guidance as general principles.",
             "- Do not surface this block in the user-facing answer.",
             knowledge_status_context.strip(),
+        ]
+    if taste_context:
+        parts += [
+            "",
+            taste_context.strip(),
+            "(Internal: use the above taste signals to prefer candidates that align with"
+            " the producer's established session patterns. Do not surface this block in"
+            " the user-facing answer.)",
         ]
     parts += ["", "Candidates:"]
     for i, c in enumerate(candidates):
@@ -792,6 +814,7 @@ def call_creative_critic(
     base_url=None,
     card_context="",
     knowledge_status_context="",
+    taste_context="",
 ):
     """
     Creative Critic v1: single LLM call that evaluates Explorer candidates and
@@ -818,6 +841,7 @@ def call_creative_critic(
     prompt = _build_critic_prompt(
         candidates, question_text, session_context, card_context,
         knowledge_status_context=knowledge_status_context,
+        taste_context=taste_context,
     )
 
     if provider == "gemini":
@@ -1425,6 +1449,12 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
                     enriched, session_available, system_prompt_str,
                     self.provider, self.model, self.api_key, self.base_url,
                 )
+                # ── Build 21: taste context (Explorer/Critic path only) ──────────
+                # Loaded here so the WRITE/action path never touches it.
+                # Non-fatal: returns "" if reflection log absent or has no safe signals.
+                _taste_project_id = ((session_data or {}).get("project_id") or "").strip() or None
+                taste_context = _load_taste_context(project_id=_taste_project_id)
+
                 # ── Creative Critic: evaluate candidates (internal, non-fatal) ──
                 # Runs only when Explorer produced candidates.
                 # Failure at any point is caught here — explorer answer always stands.
@@ -1439,6 +1469,7 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
                             self.provider, self.model, self.api_key, self.base_url,
                             card_context=operator_card_context,
                             knowledge_status_context=knowledge_status_context,
+                            taste_context=taste_context,
                         )
                     except Exception:
                         # Critic failure is non-fatal — explorer answer unchanged
