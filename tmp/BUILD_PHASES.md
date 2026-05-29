@@ -44,6 +44,7 @@ Phase E — NOT STARTED
 - D Slice 23 — Knowledge Feedback (Build 16): PASS/LOCKED
 - D Slice 24 — Session State v2 + Studio Panel (Build 17): PASS/LOCKED
 - D Slice 25 — Memory Promotion v1 / Promotion Candidate Generator (Build 18): ⏳ AWAITING CODEX — 59/59 PASS
+- D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19): PASS/LOCKED
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -51,7 +52,7 @@ Phase E — NOT STARTED
 - `route_track` routing actions require careful confirmation policy
 - ChromaDB memory may be missing locally — do not describe as fully available unless installed
 - Future slices: plugin_param, plugin_load, export/bounce, clip/scene, marketplace, tutorial creator, Studio OS expansion remain roadmap
-- Memory promotion candidate generator (Build 18) is built — awaiting Codex lock.
+- Memory promotion candidate generator (Build 18) is built — awaiting Codex lock. Session-end hook (Build 19 / D7) is next prerequisite.
 
 ---
 

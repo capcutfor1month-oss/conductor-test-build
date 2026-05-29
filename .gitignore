@@ -14,6 +14,7 @@ memory/context_pack_log.jsonl
 memory/undo_log.jsonl
 memory/knowledge_feedback_log.jsonl
 memory/promotion_candidates.jsonl
+memory/session_reflection_log.jsonl
 graphify-out/
 CHAT GPT SESSION HANDCOFFS/
 tmp/old_project_reference/

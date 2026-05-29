@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Build 18 (Memory Promotion v1) complete, hygiene pass done, awaiting Codex lock.
+> Last updated: May 2026 — Build 19 (Session Reflection v1) complete, awaiting Codex lock. Build 18 still awaiting Codex lock.
 
 ---
 
@@ -33,6 +33,7 @@
 | D Slice 23 — Ambient Feedback UI / Feedback Wiring v1 (Build 16) | D213–D220 | `phase_d_slice23_eval.py` | ✅ LOCKED — 39/39 PASS |
 | D Slice 24 — Feedback Signal Reader v1 (Build 17) | D221–D228 | `phase_d_slice24_eval.py` | ✅ LOCKED — 34/34 PASS |
 | D Slice 25 — Memory Promotion v1 / Candidate Generator (Build 18) | D229–D248 | `phase_d_slice25_eval.py` | ⏳ AWAITING CODEX — 59/59 PASS |
+| D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19) | D249–D265 | `phase_d_slice26_eval.py` | ✅ LOCKED — 41/41 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -42,7 +43,13 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
-[post hygiene pass — all 4 suites re-confirmed]
+[Build 19 — Session Reflection v1]
+phase_d_slice26_eval.py — 41/41 PASS  (D249–D265, Session Reflection v1 — Build 19)
+phase_d_slice25_eval.py — 59/59 PASS  (D229–D248, Memory Promotion v1 — Build 18, regression)
+test_vault_integrity.py — 15/15 PASS  (regression)
+python3 -m py_compile rag/session_reflection.py  PASS
+
+[post hygiene pass — Build 18]
 phase_d_slice25_eval.py — 59/59 PASS  (D229–D248, Memory Promotion v1 — Build 18)
 phase_d_slice24_eval.py — 34/34 PASS  (D221–D228, Feedback Signal Reader v1 — Build 17)
 python3 -m py_compile rag/memory_promotion.py    PASS
@@ -70,7 +77,77 @@ python3 -m py_compile tools/harness_server.py  PASS
 
 ---
 
-## CURRENT HANDOFF — BUILD 18 (AWAITING CODEX)
+## CURRENT HANDOFF — BUILD 19 (AWAITING CODEX)
+
+```
+Build:               Build 19 — Session Reflection / Feedback Summary v1
+
+Last completed step: rag/session_reflection.py created — read-only reflection generator.
+                     run_reflection(candidates_path, feedback_log_path, knowledge_log_path,
+                                    reflection_log_path, dry_run, write_log) → dict.
+                     Reads promotion_candidates.jsonl (accepted signals) and
+                     feedback_log.jsonl + knowledge_feedback_log.jsonl (negative signals).
+                     Detects repeated action_type patterns from metadata (no hardcoded words).
+                     Project notes only when project_id present. Scope field preserved from
+                     candidate record. Negative types (UNDO/WRONG_DIRECTION/NOT_HELPFUL/
+                     WRONG/OUTDATED) → rejected_signals + do_not_promote.
+                     TOO_MUCH/KEEP/etc. → not in do_not_promote (calibration, not rejection).
+                     write_log=True + dry_run=False → appends to session_reflection_log.jsonl.
+                     dry_run always overrides write_log. No ChromaDB. No level elevation.
+                     tests/phase_d_slice26_eval.py created: D249–D265, 41/41 PASS.
+
+Files changed:
+  rag/session_reflection.py (new)
+    - run_reflection(candidates_path, feedback_log_path, knowledge_log_path,
+                     reflection_log_path, dry_run=False, write_log=False) → dict
+    - accepted_signals: all records from promotion_candidates.jsonl
+    - rejected_signals / do_not_promote: UNDO/WRONG_DIRECTION from action log;
+      NOT_HELPFUL/WRONG/OUTDATED from knowledge log
+    - repeated_patterns: action_type appearing >= 2 times in accepted_signals
+    - project_notes: one per distinct non-empty project_id across accepted + rejected
+    - confidence_reasons: candidate_id, score, evidence, suggested_level per accepted
+    - counts: total_candidates_read, accepted, rejected, repeated_patterns,
+              project_notes, do_not_promote
+    - _REPEATED_PATTERN_MIN = 2
+    - _NEVER_DO_PATH + _CONFIRMED_PREFS_PATH guards documented (never written to)
+    - CLI: python3 rag/session_reflection.py [--dry-run] [--write-log] [--json]
+
+  tests/phase_d_slice26_eval.py (new)
+    - D249–D265, 41/41 PASS
+
+  .gitignore
+    - memory/session_reflection_log.jsonl added
+
+Tests run:           phase_d_slice26_eval.py  41/41 PASS
+                     phase_d_slice25_eval.py  59/59 PASS  (regression)
+                     test_vault_integrity.py  15/15 PASS  (regression)
+                     python3 -m py_compile rag/session_reflection.py  PASS
+
+Current failure:     none — all passing
+Next intended edit:  none — awaiting Codex audit
+
+Staged files:        .gitignore
+                     rag/session_reflection.py
+                     tests/phase_d_slice26_eval.py
+                     tmp/HANDOFF_CURRENT_STATE.md
+                     tmp/BUILD_PHASES.md
+
+Do-not-touch list:   rag/memory_promotion.py (locked Build 18)
+                     tools/harness_server.py
+                     tools/conductor_bridge.py
+                     app/*
+                     memory/chromadb/
+                     memory/feedback_log.jsonl (read-only)
+                     memory/knowledge_feedback_log.jsonl (read-only)
+                     memory/promotion_candidates.jsonl (read-only)
+                     conductor-vault/producer/never_do_rules.md
+                     conductor-vault/producer/confirmed_preferences.md
+                     phase_d_slice1–25_eval.py (all locked)
+```
+
+---
+
+## PREVIOUS HANDOFF — BUILD 18 (AWAITING CODEX)
 
 ```
 Build:               Build 18 — Memory Promotion v1 / Promotion Candidate Generator
