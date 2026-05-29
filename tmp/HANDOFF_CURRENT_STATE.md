@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Build 19 (Session Reflection v1) complete, awaiting Codex lock. Build 18 still awaiting Codex lock.
+> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED.
 
 ---
 
@@ -32,8 +32,9 @@
 | D Slice 22 — Knowledge Feedback Log v1 (Build 15) | D205–D212 | `phase_d_slice22_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 23 — Ambient Feedback UI / Feedback Wiring v1 (Build 16) | D213–D220 | `phase_d_slice23_eval.py` | ✅ LOCKED — 39/39 PASS |
 | D Slice 24 — Feedback Signal Reader v1 (Build 17) | D221–D228 | `phase_d_slice24_eval.py` | ✅ LOCKED — 34/34 PASS |
-| D Slice 25 — Memory Promotion v1 / Candidate Generator (Build 18) | D229–D248 | `phase_d_slice25_eval.py` | ⏳ AWAITING CODEX — 59/59 PASS |
+| D Slice 25 — Memory Promotion v1 / Candidate Generator (Build 18) | D229–D248 | `phase_d_slice25_eval.py` | ✅ LOCKED — 59/59 PASS — commit 9b63bac |
 | D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19) | D249–D265 | `phase_d_slice26_eval.py` | ✅ LOCKED — 41/41 PASS |
+| D Slice 27 — Controlled Memory Writer v1 (Build 20) | D266–D281 | `phase_d_slice27_eval.py` | ✅ PASS/LOCKED — 97/97 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -43,6 +44,13 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+[Build 20 — Controlled Memory Writer v1]
+phase_d_slice27_eval.py — 97/97 PASS  (D266–D281, Controlled Memory Writer v1 — Build 20)
+phase_d_slice26_eval.py — 41/41 PASS  (D249–D265, Session Reflection v1 — Build 19, regression)
+phase_d_slice25_eval.py — 59/59 PASS  (D229–D248, Memory Promotion v1 — Build 18, regression)
+test_vault_integrity.py — 15/15 PASS  (regression)
+python3 -m py_compile rag/memory_writer.py  PASS
+
 [Build 19 — Session Reflection v1]
 phase_d_slice26_eval.py — 41/41 PASS  (D249–D265, Session Reflection v1 — Build 19)
 phase_d_slice25_eval.py — 59/59 PASS  (D229–D248, Memory Promotion v1 — Build 18, regression)
@@ -77,7 +85,76 @@ python3 -m py_compile tools/harness_server.py  PASS
 
 ---
 
-## CURRENT HANDOFF — BUILD 19 (AWAITING CODEX)
+## BUILD 20 — PASS/LOCKED
+
+```
+Build:               Build 20 — Controlled Memory Writer v1
+
+Last completed step: rag/memory_writer.py created — bridge-only controlled write.
+                     write_promoted_memories(reflection_path, bridge_url, dry_run,
+                                             write_log, reflection) → dict.
+                     Reads accepted_signals from Build 19 reflection.
+                     Skips: do_not_promote, global_taste, suggested_level >= 3,
+                            session_project with no project_id.
+                     Routes session_project → "project" collection,
+                            session_only → "producer" collection.
+                     All writes via bridge POST /memory (mode=INTERN_WRITE_SAFE).
+                     No direct ChromaDB. No Level 3/4 writes. No never-do writes.
+                     dry_run=True (default) makes zero bridge calls.
+                     Bridge failure on one candidate is non-fatal; others continue.
+                     write_log=True + dry_run=False → idempotency via write_log.jsonl.
+                     tests/phase_d_slice27_eval.py created: D266–D281, 97/97 PASS.
+
+Files changed:
+  rag/memory_writer.py (new)
+    - write_promoted_memories(reflection_path, bridge_url, dry_run=True,
+                               write_log=False, reflection=None) → dict
+    - _load_latest_reflection(path) — reads last record from reflection log
+    - _load_written_ids(write_log_path) — idempotency ledger reader
+    - _append_write_log(write_log_path, record) — non-fatal appender
+    - _post_memory(bridge_url, payload) → (ok, mem_id_or_error) — urllib only
+    - _build_text(evidence, action_type, target, message, feedback_type) → str
+    - _LEVEL_CAP = 2, _SKIP_SCOPES = {"global_taste"}, _MODE = "INTERN_WRITE_SAFE"
+    - _SCOPE_TO_COLLECTION = {session_project: project, session_only: producer}
+    - _NEVER_DO_PATH + _CONFIRMED_PREFS_PATH + _CHROMA_DIR guards documented
+    - CLI: python3 rag/memory_writer.py [--no-dry-run] [--write-log] [--json]
+
+  tests/phase_d_slice27_eval.py (new)
+    - D266–D281, 97/97 PASS
+
+  .gitignore
+    - memory/write_log.jsonl added
+
+  tmp/BUILD_PHASES.md + tmp/HANDOFF_CURRENT_STATE.md
+    - Build 20 state recorded
+
+Tests run:           phase_d_slice27_eval.py  97/97 PASS
+                     phase_d_slice26_eval.py  41/41 PASS  (regression)
+                     phase_d_slice25_eval.py  59/59 PASS  (regression)
+                     test_vault_integrity.py  15/15 PASS  (regression)
+                     python3 -m py_compile rag/memory_writer.py  PASS
+
+Current failure:     none — all passing
+Codex result:        PASS/LOCKED
+
+Do-not-touch list:   rag/memory_promotion.py (locked Build 18)
+                     rag/session_reflection.py (locked Build 19)
+                     tools/harness_server.py
+                     tools/conductor_bridge.py
+                     app/*
+                     memory/chromadb/
+                     memory/feedback_log.jsonl (read-only)
+                     memory/knowledge_feedback_log.jsonl (read-only)
+                     memory/promotion_candidates.jsonl (read-only)
+                     memory/session_reflection_log.jsonl (read-only)
+                     conductor-vault/producer/never_do_rules.md
+                     conductor-vault/producer/confirmed_preferences.md
+                     phase_d_slice1–26_eval.py (all locked)
+```
+
+---
+
+## PREVIOUS HANDOFF — BUILD 19 (PASS/LOCKED — commit 2e27de2)
 
 ```
 Build:               Build 19 — Session Reflection / Feedback Summary v1
@@ -147,7 +224,7 @@ Do-not-touch list:   rag/memory_promotion.py (locked Build 18)
 
 ---
 
-## PREVIOUS HANDOFF — BUILD 18 (AWAITING CODEX)
+## PREVIOUS HANDOFF — BUILD 18 (PASS/LOCKED — commit 9b63bac)
 
 ```
 Build:               Build 18 — Memory Promotion v1 / Promotion Candidate Generator
