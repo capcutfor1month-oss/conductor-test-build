@@ -1,7 +1,7 @@
 # Conductor — Build Phases Temporary Memory
 > DELETE THIS FILE once all phases are built, tested, and logged into relevant MD files.
 > Purpose: survive context compaction. Resume from here after any session reset.
-> Last updated: May 2026
+> Last updated: May 2026 — Build 18 complete (awaiting Codex)
 
 ---
 
@@ -18,7 +18,7 @@ Mark ✅ when built + tested + logged into project.md / LIMITATIONS.md.
 Phase A — ✅ COMPLETE
 Phase B — ✅ COMPLETE
 Phase C — ✅ COMPLETE
-Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–21 complete)
+Phase D — IN PROGRESS (Slices 1–5 complete, Expanded Actions 1–3A complete, Live Harness Slices 9–25 complete)
 Phase E — NOT STARTED
 
 ### Locked Slices (current build)
@@ -40,13 +40,18 @@ Phase E — NOT STARTED
 - D Slice 19 — Knowledge Status Context to Critic (Build 12): PASS/LOCKED
 - D Slice 20 — Critic Composer Polish (Build 13): PASS/LOCKED
 - D Slice 21 — CLARIFY Mode Hardening (Build 14): PASS/LOCKED
+- D Slice 22 — Feedback UI Chips (Build 15): PASS/LOCKED
+- D Slice 23 — Knowledge Feedback (Build 16): PASS/LOCKED
+- D Slice 24 — Session State v2 + Studio Panel (Build 17): PASS/LOCKED
+- D Slice 25 — Memory Promotion v1 / Promotion Candidate Generator (Build 18): ⏳ AWAITING CODEX — 59/59 PASS
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
 - `track_delete` and `transport_record` disabled in harness pending confirmation UI
 - `route_track` routing actions require careful confirmation policy
 - ChromaDB memory may be missing locally — do not describe as fully available unless installed
-- Future slices: plugin_param, plugin_load, export/bounce, clip/scene, memory promotion, marketplace, tutorial creator, Studio OS expansion remain roadmap
+- Future slices: plugin_param, plugin_load, export/bounce, clip/scene, marketplace, tutorial creator, Studio OS expansion remain roadmap
+- Memory promotion candidate generator (Build 18) is built — awaiting Codex lock.
 
 ---
 
@@ -845,7 +850,7 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 |---|---|---|---|
 | D6 | Feedback UI buttons | `app/index.html` — Keep / Undo / Too much / Not enough / Wrong direction wired to `POST /feedback` | ❌ Roadmap |
 | D7 | Session-end hook | Triggers `memory_promotion.py` on session close; summarise session, extract decisions | ❌ Roadmap |
-| D3 | Memory promotion — "dreaming" | `rag/memory_promotion.py` — runs at session end, silently scores + promotes decisions Level 1→4 | ❌ Roadmap |
+| D3 | Memory promotion — "dreaming" | `rag/memory_promotion.py` — promotion candidate generator; scores feedback events, generates structured candidates Level 1–2 | ⏳ Built (Build 18) — AWAITING CODEX |
 | UI | CoProducer Translation layer | **Required before friend-test** — wraps ActionProofs + errors in assistant dialogue; no raw JSON/enums to user | ❌ Roadmap |
 | UI | Drift diff dialog | Premium modal on drift-blocked undo | ❌ Roadmap |
 | UI | Studio timeline / visual debugger | Visual view of `action_log.jsonl` | ❌ Roadmap |

@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Build 16 (Ambient Feedback UI) complete. Pausing here.
+> Last updated: May 2026 — Build 18 (Memory Promotion v1) complete, hygiene pass done, awaiting Codex lock.
 
 ---
 
@@ -31,6 +31,8 @@
 | D Slice 21 — CLARIFY Mode Hardening (Build 14) | D197–D204 | `phase_d_slice21_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 22 — Knowledge Feedback Log v1 (Build 15) | D205–D212 | `phase_d_slice22_eval.py` | ✅ LOCKED — 8/8 PASS |
 | D Slice 23 — Ambient Feedback UI / Feedback Wiring v1 (Build 16) | D213–D220 | `phase_d_slice23_eval.py` | ✅ LOCKED — 39/39 PASS |
+| D Slice 24 — Feedback Signal Reader v1 (Build 17) | D221–D228 | `phase_d_slice24_eval.py` | ✅ LOCKED — 34/34 PASS |
+| D Slice 25 — Memory Promotion v1 / Candidate Generator (Build 18) | D229–D248 | `phase_d_slice25_eval.py` | ⏳ AWAITING CODEX — 59/59 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -40,6 +42,12 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+[post hygiene pass — all 4 suites re-confirmed]
+phase_d_slice25_eval.py — 59/59 PASS  (D229–D248, Memory Promotion v1 — Build 18)
+phase_d_slice24_eval.py — 34/34 PASS  (D221–D228, Feedback Signal Reader v1 — Build 17)
+python3 -m py_compile rag/memory_promotion.py    PASS
+test_vault_integrity.py — 15/15 PASS
+
 phase_d_slice23_eval.py — 39/39 PASS  (D213–D220, Ambient Feedback UI — Build 16)
 phase_d_slice22_eval.py — 8/8   PASS  (D205–D212, Knowledge Feedback Log v1 — Build 15)
 phase_d_slice21_eval.py — 8/8   PASS  (D197–D204, CLARIFY Mode Hardening — Build 14)
@@ -62,7 +70,226 @@ python3 -m py_compile tools/harness_server.py  PASS
 
 ---
 
-## CURRENT HANDOFF — BUILD 16 COMPLETE
+## CURRENT HANDOFF — BUILD 18 (AWAITING CODEX)
+
+```
+Build:               Build 18 — Memory Promotion v1 / Promotion Candidate Generator
+
+Last completed step: rag/memory_promotion.py created — read-only candidate generator.
+                     run_promotion(dry_run, ...) returns structured promotion candidates
+                     from both feedback_log.jsonl (action) and knowledge_feedback_log.jsonl.
+                     Idempotency via MD5 candidate_id + ledger (promotion_candidates.jsonl).
+                     Level 4 / Never-Do hard cap: suggested_level never >= 3.
+                     Scope: session_project when project_id set; session_only otherwise.
+                     Global taste scope NOT generated in this build.
+                     tests/phase_d_slice25_eval.py created: D229–D248, 59/59 PASS.
+                     Future-builds note added to conductor_future_vision_roadmap.md.
+
+Files changed:
+  rag/memory_promotion.py (new)
+    - run_promotion(feedback_log_path, proof_log_path, knowledge_log_path,
+                    ledger_path, dry_run=False) → dict
+    - Reads action feedback + knowledge feedback, read-only
+    - KEEP / HELPFUL → candidates (score >= 0.50)
+    - UNDO / WRONG_DIRECTION / NOT_HELPFUL / WRONG / OUTDATED → never promote
+    - TOO_MUCH / NOT_ENOUGH / TOO_VAGUE → below threshold (0.25/0.20)
+    - Message bonus +0.10
+    - Idempotency: _make_candidate_id(source, fb_id, type) → MD5 hash
+    - Ledger: memory/promotion_candidates.jsonl (append-only, new log)
+    - Level cap: _LEVEL_MAX_THIS_BUILD = 2 (never 3 or 4)
+    - _NEVER_DO_PATH guard documented (never written to)
+    - CLI: python3 rag/memory_promotion.py [--dry-run] [--json]
+
+  tests/phase_d_slice25_eval.py (new)
+    - D229: importable, run_promotion callable
+    - D230: missing logs → safe zero result
+    - D231: empty logs → safe zero result
+    - D232: KEEP/HELPFUL → candidates generated with correct source/score
+    - D233: UNDO/WRONG_DIRECTION/NOT_HELPFUL/WRONG/OUTDATED → no candidates
+    - D234: TOO_MUCH/NOT_ENOUGH/TOO_VAGUE below threshold → no candidates
+    - D235: message bonus — exact scores 0.65/0.75/0.55/0.65
+    - D236: scope session_project (project_id set) vs session_only (not set)
+    - D237: knowledge feedback always session_only, project_id == ""
+    - D238: single KEEP → no global_taste scope; suggested_level <= 2
+    - D239: idempotency — second run with same log: 0 new, N duplicates_skipped
+    - D240: dry_run=True → ledger not created
+    - D241: no suggested_level >= 3 in any candidate
+    - D242: live log mtimes unchanged (feedback, knowledge, proof)
+    - D243: never_do_rules.md mtime unchanged
+    - D244: static source analysis — no forbidden imports, CLI guard, default paths
+
+  Future Builds/conductor_future_vision_roadmap.md
+    - Build 18 feedback learning caveats added under Phase D section
+
+Live CLI run (dry-run):
+  1543 records processed (test data from prior suites + live feedback)
+  459 candidates generated (all test-data KEEP/HELPFUL)
+  1084 non-promoting skipped (UNDO/WRONG_DIRECTION/etc.)
+  Ledger not written (dry-run)
+
+Note:
+  datetime.utcnow() deprecation warning on Python 3.12+ is cosmetic.
+  Behavior unaffected. Future: replace with datetime.now(UTC) if desired.
+
+Tests run:           phase_d_slice25_eval.py  59/59 PASS
+                     phase_d_slice24_eval.py  34/34 PASS  (regression)
+                     test_vault_integrity.py  15/15 PASS  (regression)
+                     python3 -m py_compile rag/memory_promotion.py  PASS
+
+Hygiene pass:        Codex failed initial lock due to out-of-scope staged files.
+                     Unstaged: memory/knowledge_feedback_log.jsonl,
+                               CHAT GPT SESSION HANDCOFFS/ (2 files),
+                               tmp/old_project_reference/ (8 files).
+                     Added to .gitignore:
+                               memory/knowledge_feedback_log.jsonl
+                               memory/promotion_candidates.jsonl
+                               CHAT GPT SESSION HANDCOFFS/
+                               tmp/old_project_reference/
+                     Re-confirmed all 4 suites after hygiene. All PASS.
+
+Current failure:     none — all passing
+
+Next intended edit:  none — awaiting Codex re-audit after hygiene pass
+
+Staged files:        .gitignore  (hygiene addition)
+                     rag/memory_promotion.py
+                     tests/phase_d_slice25_eval.py
+                     Future Builds/conductor_future_vision_roadmap.md
+                     tmp/HANDOFF_CURRENT_STATE.md
+
+Do-not-touch list:   tools/harness_server.py
+                     tools/conductor_bridge.py
+                     rag/feedback.py
+                     rag/routed_retriever.py
+                     rag/context_pack_builder.py
+                     rag/* (all other existing files)
+                     memory/feedback_log.jsonl (read-only)
+                     memory/action_log.jsonl (read-only)
+                     memory/action_proof_log.jsonl (read-only)
+                     memory/knowledge_feedback_log.jsonl (read-only, gitignored)
+                     conductor-vault/producer/never_do_rules.md
+                     app/* (UI not in scope)
+                     phase_d_slice1–25_eval.py (locked once Codex passes)
+```
+
+---
+
+## PREVIOUS HANDOFF — BUILD 17 LOCKED
+
+```
+Build:               Build 17 — Feedback Signal Reader v1
+Commit:              1697c80
+
+Last completed step: tools/read_feedback.py created — standalone CLI + importable
+                     summarize_feedback(path=None) -> dict.
+                     Reads memory/knowledge_feedback_log.jsonl read-only.
+                     All 6 type keys always present; unknown types → OTHER;
+                     sample_messages capped at 5; period_start/end from timestamps.
+                     phase_d_slice24_eval.py created: D221–D228, 34/34 PASS.
+                     D228 promotion-regex false-positive fixed during build
+                     (bare \bpromotion\b → specific function/module names only).
+
+Files changed (committed):
+  tools/read_feedback.py (new)
+    - summarize_feedback(path=None) → dict
+    - _build_result() helper
+    - _print_summary() CLI formatter
+    - if __name__ == '__main__' guard; default path = knowledge_feedback_log.jsonl
+    - Read-only: no open(w/a), no chromadb, no rag imports, no promotion calls
+
+  tests/phase_d_slice24_eval.py (new)
+    - D221: importable, summarize_feedback callable
+    - D222: missing/empty file → total=0, all keys zeroed, period_start None
+    - D223: malformed lines skipped; valid lines counted
+    - D224: all type buckets correct; unknown → OTHER
+    - D225: all 6 type keys always present (empty + missing file)
+    - D226: period_start/end correctness; messages_with_content; sample cap ≤5
+    - D227: live log mtime unchanged after call (read-only proof)
+    - D228: no forbidden imports/writes in source; no build refs in harness_server;
+            __main__ guard present; default path references correct filename
+
+Live log at commit:  64 records — HELPFUL:16 NOT_HELPFUL:16 TOO_VAGUE:8
+                     WRONG:8 OUTDATED:16 OTHER:0 messages_with_content:24
+
+Tests run:           phase_d_slice24_eval.py  34/34 PASS
+                     phase_d_slice23_eval.py  39/39 PASS
+                     node --check app/harness.js    PASS
+                     python3 -m py_compile tools/harness_server.py  PASS
+
+Current failure:     none — all passing
+
+Next intended edit:  none — Build 17.5 deferred (see below)
+
+Do-not-touch list:   tools/harness_server.py (untouched)
+                     tools/conductor_bridge.py (untouched)
+                     rag/* (all files untouched)
+                     memory/* (untouched)
+                     phase_d_slice1–24_eval.py (all locked)
+                     action endpoints (/action/*)
+                     /session/state implementation
+                     Auto Execute path
+                     PluginBridge
+                     Operator Cards
+```
+
+---
+
+## BUILD 17.5 — SCOPE-CHECKED, DEFERRED
+
+> Scope check completed May 2026 (two iterations — sandbox boundary correction applied).
+> Decision: defer. Do NOT build without explicit user instruction.
+
+### What was scoped
+
+Two isolated client-side wiring additions to `app/harness.js`:
+
+**Addition A — `#studioLastResponse` preview**
+- The div exists in `app/harness.html` below the Ask Conductor input.
+- It is never written to in the current `harness.js`.
+- Proposed: when `type:"answer"` arrives in `handleSandboxChat()`, write ≤120 char
+  preview of `data.text` to `#studioLastResponse`; clear on new message submission;
+  leave blank on clarify/action/error paths.
+
+**Addition B — Studio action stub buttons**
+- Three buttons exist in HTML: "Analyze selected" / "Check gain" / "Explain chain".
+- They have `data-tooltip` attributes but zero click handlers.
+- Proposed: each calls `handleSandboxChat()` with a pre-defined knowledge query text;
+  sandbox gate (`currentMode !== "sandbox"`) remains intact.
+
+### Why deferred
+
+- Both are small UI polish — not worth a standalone backend-style audit cycle right now.
+- The locked Knowledge Brain v1 is already testable through AI Sandbox mode as-is.
+- Better bundled later with CoProducer Translation Layer (Build 19) or production UI
+  cleanup when developer controls are removed from harness.html/js.
+
+### Constraints preserved
+
+- `currentMode = "live"` default: KEEP as-is. Do not change.
+- Sandbox gate in `handleSandboxChat()`: KEEP. It is an intentional dev boundary.
+- No backend, rag, bridge, memory, PluginBridge, Auto Execute, Web, new cards, or
+  `app/index.html` changes.
+
+### Test plan (when eventually built)
+
+- Static source analysis only (same pattern as slices 22–24)
+- D229: `#studioLastResponse` written on type:"answer"
+- D230: `#studioLastResponse` cleared on new submission
+- D231: `#studioLastResponse` untouched on clarify/action/error
+- D232–D234: each Studio stub button wired and calls handleSandboxChat with correct text
+- D235: sandbox gate still blocks stubs when currentMode !== "sandbox"
+- D236: no backend files touched
+
+### Scope label for future build prompt
+
+> "Claude, Build 17.5 only: UI Integration Pass.
+>  Wire #studioLastResponse and three Studio action stubs in harness.js.
+>  Do not change currentMode default or sandbox gate.
+>  Do not touch backend, rag, bridge, memory, PluginBridge, or app/index.html."
+
+---
+
+## PREVIOUS HANDOFF — BUILD 16 COMPLETE
 
 ```
 Build:               Build 16 — Ambient Feedback UI / Feedback Wiring v1
@@ -87,18 +314,9 @@ Files changed:
     - Matches .btn-copy / .msg-actions muted design language
 
   tests/phase_d_slice23_eval.py (new file)
-    - D213: addChatMessage returns wrap
-    - D214: answer branch attaches chips when response_id exists
-    - D215: Helpful sends HELPFUL via POST /harness/feedback
-    - D216: Not this opens sub-row only, does not send NOT_HELPFUL
-    - D217: TOO_VAGUE / WRONG / OUTDATED send correct types
-    - D218: clarify type → assistant message, no chips
-    - D219: action/proposal path gets no chips
-    - D220: backend/rag files untouched; no forbidden wording
+    - D213–D220 (39 checks)
 
   docs/HARNESS_GUIDE.md — Build 16 section added
-  HANDOFF_CURRENT_STATE.md — Build 16 state appended
-  tmp/HANDOFF_CURRENT_STATE.md — this file updated
 
 Tests run:           phase_d_slice23_eval.py  39/39 PASS
                      phase_d_slice22_eval.py  8/8   PASS
@@ -106,19 +324,6 @@ Tests run:           phase_d_slice23_eval.py  39/39 PASS
                      node --check app/harness.js    PASS
 
 Current failure:     none — all passing
-
-Next intended edit:  paused — awaiting Codex audit then user direction for Build 17
-
-Do-not-touch list:   tools/harness_server.py (untouched)
-                     tools/conductor_bridge.py (untouched)
-                     rag/* (all files untouched)
-                     memory/* (untouched)
-                     phase_d_slice1–22_eval.py (all locked)
-                     action endpoints (/action/*)
-                     /session/state implementation
-                     Auto Execute path
-                     PluginBridge
-                     Operator Cards
 ```
 
 ---

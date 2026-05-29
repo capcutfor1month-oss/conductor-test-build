@@ -47,6 +47,31 @@ Trust layer:
 - feedback
 - session memory promotion
 
+### Memory Promotion — Feedback Learning Caveats (Build 18)
+
+Build 18 (Memory Promotion v1) introduces the candidate generator. These rules
+are locked into the architecture and must not be relaxed in future builds:
+
+- **Build 15/16 feedback chips are explicit UI feedback only.** They appear on
+  knowledge answer bubbles only. Absence of a chip interaction has zero learning
+  weight — the feedback UI may not have been visible or available.
+
+- **Voice mode reactions need a separate path.** Vocal approval/disapproval
+  ("yeah that's good", "no that's off") cannot be treated as promotion-eligible
+  feedback until a natural-reaction parser is built. Do not infer intent from
+  conversational tone alone.
+
+- **Music feedback is contextual.** One accepted suggestion does not become a
+  universal user preference. A vocal treatment that works in one song may not
+  apply to the next: song, genre, project goal, arrangement density, and
+  recording quality all affect what is "correct." Scope defaults to
+  session/project. Global user-taste elevation requires repeated explicit
+  evidence across multiple sessions.
+
+- **Absence of feedback is not a negative signal.** Missing feedback has zero
+  learning weight in both directions. Do not penalise or suppress candidates
+  because the user did not respond to a specific suggestion.
+
 These phases are the infrastructure layer for all future expansion.
 
 ---
