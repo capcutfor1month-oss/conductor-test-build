@@ -891,6 +891,102 @@ def call_creative_critic(
         return {}, tokens
 
 
+# ── Build 14: CLARIFY composer ────────────────────────────────────────────────
+
+# Internal category/label names that must never leak into a composed clarify question.
+_CLARIFY_LABEL_RE = re.compile(
+    r"\b("
+    r"clarify|clarify_required"
+    r"|unclear_target|unclear_scope|too_short|unsupported_manual_gui"
+    r"|risk_category|protection_level|block_unsupported"
+    r")\b"
+    r"|(mode:|risk:|protection:)",
+    re.IGNORECASE,
+)
+
+# Action verbs used to extract intent from ambiguous pronoun messages.
+_CLARIFY_VERB_RE = re.compile(
+    r"\b(lower|raise|boost|cut|compress|route|pan|mute|solo|arm|"
+    r"filter|eq|bypass|enable|disable|rename|color|duplicate|"
+    r"create|load|send|add|remove|set|adjust|apply|change)\b",
+    re.IGNORECASE,
+)
+
+
+def _clarify_safe(question):
+    """
+    Build 14: final safety guard for a composed clarify question.
+    Returns the question if it is clean and ends with '?'; otherwise ''.
+    """
+    if not question or not question.strip().endswith("?"):
+        return ""
+    if (
+        _CLARIFY_LABEL_RE.search(question)
+        or _STRUCTURAL_RE.search(question)
+        or _TRUST_LABEL_RE.search(question)
+    ):
+        return ""
+    return question
+
+
+def _compose_clarify_question(original_text, risk_reason, risk_category):
+    """
+    Build 14: deterministic clarify question composer. No LLM call.
+
+    Returns a single natural studio-style question ending with '?' when the
+    ambiguity category is recognised. Returns '' to signal that the caller
+    should fall back to call_knowledge_answer().
+
+    Template map:
+      unclear_target / any 'unclear' category  →  "Which track or plugin should I {verb}?"
+      too_short                                →  "What would you like to do — could you say a bit more?"
+      *_unclear_scope                          →  "Which track, bus, or plugin are you working on?"
+      generic fallback (safe risk_reason)      →  "Could you clarify — {cleaned reason}?"
+      unsupported / block / unknown            →  '' (fall back to LLM)
+
+    Never exposes internal labels (Mode:, Risk:, CLARIFY, protection levels, etc.).
+    """
+    cat = (risk_category or "").lower().strip()
+
+    # ── Pronouns / unclear target ─────────────────────────────────────────────
+    # e.g. "Lower it", "Compress it", "Pan it right" — no referent in message.
+    if "unclear" in cat:
+        m = _CLARIFY_VERB_RE.search(original_text or "")
+        question = (
+            f"Which track or plugin should I {m.group(1).lower()}?"
+            if m else
+            "Which track or plugin are you referring to?"
+        )
+        return _clarify_safe(question)
+
+    # ── Too short ─────────────────────────────────────────────────────────────
+    if cat == "too_short":
+        return "What would you like to do — could you say a bit more?"
+
+    # ── Unclear scope (routing_unclear_scope, effect_unclear_scope, …) ────────
+    if "scope" in cat:
+        return "Which track, bus, or plugin are you working on?"
+
+    # ── Generic fallback: derive a question from risk_reason if safe ──────────
+    reason = (risk_reason or "").strip()
+    if reason:
+        # Strip internal instruction phrasing injected by protection_model.
+        reason = re.sub(
+            r"(?i)ask\s+(exactly\s+)?one\s+clarifying\s+question[^.]*\.",
+            "", reason,
+        ).strip()
+        reason = re.sub(
+            r"(?i)\bbefore\s+(any\s+action|proceeding)\.?", "", reason,
+        ).strip()
+        reason = reason.rstrip(".,:; ")
+        if reason and not _CLARIFY_LABEL_RE.search(reason) and len(reason) < 120:
+            q = f"Could you clarify — {reason[0].lower()}{reason[1:]}?"
+            return _clarify_safe(q)
+
+    # No safe template matched — return '' so caller falls back to LLM path.
+    return ""
+
+
 # ── Critic answer composer helpers ────────────────────────────────────────────
 
 def _safe_session_facts(facts):
@@ -1169,6 +1265,9 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
         )
         mode              = (pack_data.get("mode") or "MENTOR") if pack_data else "MENTOR"
         message_pack_text = (pack_data.get("pack")  or "")      if pack_data else ""
+        # Build 14: extract risk fields used by the CLARIFY composer.
+        risk_reason   = (pack_data.get("risk_reason")   or "") if pack_data else ""
+        risk_category = (pack_data.get("risk_category") or "") if pack_data else ""
 
         # ── Step 2: session pack (DNA + project state + tool health) ────────────
         session_data, _session_err = _call_bridge_get("/context/session", timeout=4.0)
@@ -1223,7 +1322,28 @@ class HarnessHandler(http.server.SimpleHTTPRequestHandler):
             })
             return
 
-        # ── Knowledge / mentor / read / clarify / freeform path ─────────────────
+        # ── Build 14: CLARIFY fast-path — deterministic composer, no LLM call ──
+        # Fires before context assembly so ambiguous messages get one clean
+        # natural question without paying an LLM token cost.
+        # If the composer cannot produce a safe question (BLOCK_UNSUPPORTED,
+        # unknown categories) it returns '' and execution falls through to the
+        # normal call_knowledge_answer() path below.
+        if mode == "CLARIFY":
+            clarify_text = _compose_clarify_question(text, risk_reason, risk_category)
+            if clarify_text:
+                self.send_json(200, {
+                    "ok":       True,
+                    "type":     "clarify",
+                    "text":     clarify_text,
+                    "mode":     mode,
+                    "model":    self.model,
+                    "provider": self.provider,
+                    "tokens":   {"input": 0, "output": 0, "total": 0},
+                })
+                return
+            # Composer returned '' — fall through to call_knowledge_answer() below.
+
+        # ── Knowledge / mentor / read / clarify (fallback) / freeform path ──────
         # Assemble context layers (same for both explorer and direct paths)
         context_parts = []
         if session_pack_text:
