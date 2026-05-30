@@ -1,6 +1,6 @@
 # Conductor — Handoff / Current State
 > Resume from here after any session reset, context compaction, or agent handoff.
-> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED.
+> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED + 22 PASS/LOCKED.
 
 ---
 
@@ -36,6 +36,7 @@
 | D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19) | D249–D265 | `phase_d_slice26_eval.py` | ✅ LOCKED — 41/41 PASS |
 | D Slice 27 — Controlled Memory Writer v1 (Build 20) | D266–D281 | `phase_d_slice27_eval.py` | ✅ PASS/LOCKED — 97/97 PASS |
 | D Slice 28 — Taste Context Injection v1 (Build 21) | D282–D297 | `phase_d_slice28_eval.py` | ✅ PASS/LOCKED — 80/80 PASS |
+| D Slice 29 — Session-End Hook v1 (Build 22) | D298–D307 | `phase_d_slice29_eval.py` | ✅ PASS/LOCKED — 61/61 PASS |
 
 **Phase C — RAG / retrieval:** ✅ LOCKED (28 sections, 410 checks — run as regression in every subsequent slice)
 **test_vault_integrity.py:** ✅ PASS — 15 pass / 0 fail / 4 warnings (cosmetic — no frontmatter in operator cards)
@@ -45,6 +46,13 @@
 ## LAST CONFIRMED TEST RUN (this session)
 
 ```
+[Build 22 — Session-End Hook v1]
+phase_d_slice29_eval.py — 61/61 PASS  (D298–D307, Session-End Hook v1 — Build 22)
+phase_d_slice28_eval.py — 80/80 PASS  (regression)
+phase_d_slice27_eval.py — 97/97 PASS  (regression)
+test_vault_integrity.py — 15/15 PASS  (regression)
+python3 -m py_compile rag/session_end.py  PASS
+
 [Build 21 — Taste Context Injection v1]
 phase_d_slice28_eval.py — 80/80 PASS  (D282–D297, Taste Context Injection v1 — Build 21)
 python3 -m py_compile rag/taste_context.py  PASS
@@ -87,6 +95,86 @@ phase_d_slice9_eval.py  — 6/6   PASS
 test_vault_integrity.py — 15/15 PASS
 node --check app/harness.js     PASS
 python3 -m py_compile tools/harness_server.py  PASS
+```
+
+---
+
+## BUILD 22 — PASS/LOCKED
+
+```
+Build:               Build 22 — Session-End Hook v1
+
+Last completed step: rag/session_end.py created — thin orchestrator connecting
+                     Builds 18→19→20 at session end.
+                     run_session_end(dry_run=True, write_promotion_ledger=False,
+                                     write_reflection_log=False, write_memory=False,
+                                     bridge_url, feedback_log_path, proof_log_path,
+                                     knowledge_log_path, candidates_path,
+                                     reflection_log_path) → dict.
+                     Step 1 (promotion) → Step 2 (reflection) → Step 3 (memory write).
+                     Step 1/2 failure → dependent steps skipped.
+                     Step 3 failure → non-fatal, captured in result.
+                     dry_run=True (default) suppresses all writes regardless of flags.
+                     write_log=(write_memory and not dry_run) — preserves Build 20
+                     idempotency ledger for live memory writes.
+                     No direct ChromaDB. No Level 3/4. No global_taste.
+                     No action execution. Never touches never-do rules.
+                     tests/phase_d_slice29_eval.py: D298–D307, 61/61 PASS.
+                     Codex blocker fixed: write_log=False → write_log=(write_memory and
+                     not dry_run). D307 tests prove idempotency preserved.
+                     Hygiene: memory/workflow_observations.jsonl added to .gitignore.
+
+Files changed:
+  rag/session_end.py (new)
+    - run_session_end(...) → dict — public API, never raises
+    - DEFAULT_BRIDGE_URL = "http://localhost:4611"
+    - _run_promotion, _run_reflection, _write_memories at module level (patchable)
+    - write_log=(write_memory and not dry_run) in Step 3
+    - Structured result: steps_attempted, steps_completed, steps_failed, dry_run,
+      promotion, reflection, memory_write, errors
+    - CLI: --no-dry-run, --write-all, --write-promotion, --write-reflection,
+           --write-memory, --json
+
+  tests/phase_d_slice29_eval.py (new)
+    - D298–D307, 61/61 PASS
+    - D298: importable + callable + DEFAULT_BRIDGE_URL + dry-run dict
+    - D299: missing/empty logs → no raise, steps_failed==0, errors==[]
+    - D300: pipeline order — step failure aborts dependents
+    - D301: dry_run=True blocks all writes regardless of write flags
+    - D302: dry_run=False + no write flags → no files written, steps still complete
+    - D303: per-step failure captured in result, does not crash hook
+    - D304: no forbidden imports/writes in source
+    - D305: idempotency — two dry-run calls same result, no files
+    - D306: structured result keys + types
+    - D307: write_log flag propagation + mocked-bridge idempotency integration
+
+  .gitignore
+    - memory/workflow_observations.jsonl added
+
+  tmp/BUILD_PHASES.md + tmp/HANDOFF_CURRENT_STATE.md
+    - Build 22 state recorded
+
+Tests run:           phase_d_slice29_eval.py  61/61 PASS
+                     phase_d_slice28_eval.py  80/80 PASS  (regression)
+                     phase_d_slice27_eval.py  97/97 PASS  (regression)
+                     test_vault_integrity.py  15/15 PASS  (regression)
+                     python3 -m py_compile rag/session_end.py  PASS
+
+Current failure:     none — all passing
+Codex result:        PASS/LOCKED
+
+Do-not-touch list:   rag/memory_promotion.py (locked Build 18)
+                     rag/session_reflection.py (locked Build 19)
+                     rag/memory_writer.py (locked Build 20)
+                     rag/taste_context.py (locked Build 21)
+                     tools/harness_server.py
+                     tools/conductor_bridge.py
+                     app/*
+                     memory/chromadb/
+                     memory/*.jsonl (runtime logs)
+                     conductor-vault/producer/never_do_rules.md
+                     conductor-vault/producer/confirmed_preferences.md
+                     phase_d_slice1–28_eval.py (all locked)
 ```
 
 ---

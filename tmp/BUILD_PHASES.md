@@ -1,7 +1,7 @@
 # Conductor — Build Phases Temporary Memory
 > DELETE THIS FILE once all phases are built, tested, and logged into relevant MD files.
 > Purpose: survive context compaction. Resume from here after any session reset.
-> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED.
+> Last updated: May 2026 — Builds 18 (9b63bac) + 19 (2e27de2) + 20 PASS/LOCKED + 21 PASS/LOCKED + 22 PASS/LOCKED.
 
 ---
 
@@ -47,6 +47,7 @@ Phase E — NOT STARTED
 - D Slice 26 — Session Reflection / Feedback Summary v1 (Build 19): PASS/LOCKED
 - D Slice 27 — Controlled Memory Writer v1 (Build 20): ✅ PASS/LOCKED — 97/97 PASS
 - D Slice 28 — Taste Context Injection v1 (Build 21): ✅ PASS/LOCKED — 80/80 PASS
+- D Slice 29 — Session-End Hook v1 (Build 22): ✅ PASS/LOCKED — 61/61 PASS
 
 ### Pending (not built)
 - Product-layer re-alignment: docs → harness UX → session-state context → metadata hiding
@@ -860,6 +861,33 @@ BM25 rescue still respects mode/routing/protection — it runs per-collection in
 | `tests/phase_d_slice28_eval.py` | 80/80 PASS |
 | `python3 -m py_compile tools/harness_server.py` | PASS |
 | `python3 -m py_compile rag/taste_context.py` | PASS |
+
+---
+
+### Phase D — Slice 29 (Session-End Hook v1 — Build 22) ✅ LOCKED
+
+> **Do not reopen unless a regression appears in `tests/phase_d_slice29_eval.py`.**
+
+| # | What | File/Path | Status |
+|---|---|---|---|
+| D-S29 | `rag/session_end.py` — thin orchestrator: Step 1 promotion → Step 2 reflection → Step 3 memory write | `rag/session_end.py` | ✅ |
+| D-S29 | `run_session_end()` — `dry_run=True` default; per-step write flags; per-step failure captured; never raises | `rag/session_end.py` | ✅ |
+| D-S29 | Step 1 failure → Steps 2+3 skipped. Step 2 failure → Step 3 skipped. Step 3 failure → non-fatal | `rag/session_end.py` | ✅ |
+| D-S29 | `write_log=(write_memory and not dry_run)` passed to `_write_memories` — preserves Build 20 idempotency | `rag/session_end.py` | ✅ |
+| D-S29 | No direct ChromaDB, no Level 3/4, no global_taste, no action execution, no never-do writes | `rag/session_end.py` | ✅ |
+| D-S29 | `.gitignore` — `memory/workflow_observations.jsonl` added | `.gitignore` | ✅ |
+| D-S29 | Phase D Slice 29 eval suite | `tests/phase_d_slice29_eval.py` — D298–D307, 61/61 PASS | ✅ |
+
+**Codex audit result:** PASS — Build 22 locked.
+
+**Audit evidence (May 2026):**
+| Suite | Result |
+|---|---|
+| `tests/phase_d_slice29_eval.py` | 61/61 PASS |
+| `tests/phase_d_slice28_eval.py` | 80/80 PASS (regression) |
+| `tests/phase_d_slice27_eval.py` | 97/97 PASS (regression) |
+| `tests/test_vault_integrity.py` | 15/15 PASS (regression) |
+| `python3 -m py_compile rag/session_end.py` | PASS |
 
 ---
 

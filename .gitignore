@@ -16,6 +16,7 @@ memory/knowledge_feedback_log.jsonl
 memory/promotion_candidates.jsonl
 memory/session_reflection_log.jsonl
 memory/write_log.jsonl
+memory/workflow_observations.jsonl
 graphify-out/
 CHAT GPT SESSION HANDCOFFS/
 tmp/old_project_reference/
